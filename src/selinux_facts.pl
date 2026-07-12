@@ -10,13 +10,13 @@
 allow(httpd_t, httpd_sys_content_t, file, read).
 allow(httpd_t, httpd_log_t, file, append).
 allow(httpd_t, httpd_sys_script_exec_t, file, write).
+allow(init_t, daemon_exec_t, file, entrypoint).
+allow(init_t, daemon_t, process, transition).
 
 has_attribute(httpd_t, webserver_domain).
 has_attribute(httpd_sys_script_exec_t, executable_content).
 has_attribute(shadow_t, credential_store).
 
 type_transition(init_t, daemon_exec_t, daemon_t).
-allow(init_t, daemon_exec_t, file, entrypoint).
-allow(init_t, daemon_t, process, transition).
 
 new_allow(policy_v2, httpd_t, shadow_t, file, read).
