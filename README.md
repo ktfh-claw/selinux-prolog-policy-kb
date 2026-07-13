@@ -13,10 +13,11 @@ The first model layer covers:
 
 - SELinux-shaped allow facts: `allow(Source, Target, Class, Permission)`
 - type attributes: `has_attribute(Type, Attribute)`
+- file-context facts: `file_context(Path, Type, Class)`
 - domain transition facts: `type_transition(Source, Entrypoint, Target)`
 - policy diff facts: `new_allow(PolicyVersion, Source, Target, Class, Permission)`
 - derived audit predicates for risky web-shell paths, domain transition
-  reachability, and high-risk policy regressions
+  reachability, path-level access, and high-risk policy regressions
 
 ## Layout
 
