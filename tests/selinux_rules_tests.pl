@@ -237,6 +237,49 @@ test(login_sensitive_process_permission_grant) :-
 test(login_non_sensitive_capability_is_not_flagged, [fail]) :-
     login_sensitive_capability(log_shipper, log_shipper_t, audit_write, _Reason).
 
+test(service_domain_resolves_login_and_entrypoint_transition) :-
+    once(service_domain(ai_agent_service, ai_agent_t)).
+
+test(service_domain_resolves_log_shipper) :-
+    once(service_domain(log_shipper_service, log_shipper_t)).
+
+test(service_domain_requires_login_transition_match, [fail]) :-
+    service_domain(mislabelled_agent_service, ai_agent_t).
+
+test(service_domain_mismatch_detects_unexpected_transition) :-
+    once(service_domain_mismatch(
+        mislabelled_agent_service,
+        ai_agent_t,
+        log_shipper_t
+    )).
+
+test(service_ai_agent_network_exposure) :-
+    once(service_ai_agent_network_exposure(
+        ai_agent_service,
+        ai_agent_t,
+        tcp,
+        80,
+        web_api_baseline
+    )).
+
+test(service_ai_agent_syscall_block) :-
+    once(service_ai_agent_syscall_block(
+        ai_agent_service,
+        ai_agent_t,
+        clone3,
+        no_unprivileged_namespace_creation
+    )).
+
+test(service_ai_agent_resource_limit) :-
+    once(service_ai_agent_resource_limit(
+        ai_agent_service,
+        ai_agent_t,
+        pids,
+        64,
+        count,
+        pids_max_64
+    )).
+
 test(risky_web_shell_path) :-
     once(risky_web_shell_path(
         httpd_t,
@@ -442,6 +485,52 @@ test(audit_finding_login_process_permission_shape) :-
         }
     )).
 
+test(audit_finding_service_domain_mismatch_shape) :-
+    once(audit_finding(
+        service_domain_mismatch,
+        finding{
+            service: mislabelled_agent_service,
+            expected_domain: ai_agent_t,
+            transition_domain: log_shipper_t
+        }
+    )).
+
+test(audit_finding_service_network_exposure_shape) :-
+    once(audit_finding(
+        service_ai_agent_network_exposure,
+        finding{
+            service: ai_agent_service,
+            domain: ai_agent_t,
+            protocol: tcp,
+            port: 80,
+            reason: web_api_baseline
+        }
+    )).
+
+test(audit_finding_service_syscall_block_shape) :-
+    once(audit_finding(
+        service_ai_agent_syscall_block,
+        finding{
+            service: ai_agent_service,
+            domain: ai_agent_t,
+            syscall: bpf,
+            reason: block_kernel_observability
+        }
+    )).
+
+test(audit_finding_service_resource_limit_shape) :-
+    once(audit_finding(
+        service_ai_agent_resource_limit,
+        finding{
+            service: ai_agent_service,
+            domain: ai_agent_t,
+            resource: memory,
+            value: 512,
+            unit: mebibytes,
+            reason: memory_max_512m
+        }
+    )).
+
 test(audit_finding_web_shell_evidence) :-
     once(audit_finding_with_evidence(risky_web_shell_path, Finding)),
     assertion(Finding.source == httpd_t),
@@ -616,6 +705,93 @@ test(audit_finding_login_process_permission_evidence) :-
         role_type(agent_r, ai_agent_t)-_,
         allow(ai_agent_t, self, process, dyntransition)-_,
         sensitive_process_permission(dyntransition, arbitrary_domain_transition)-_
+    ]).
+
+test(audit_finding_service_domain_mismatch_evidence) :-
+    once(audit_finding_with_evidence(service_domain_mismatch, Finding)),
+    assertion(Finding.service == mislabelled_agent_service),
+    assertion(Finding.evidence = [
+        service_unit(
+            mislabelled_agent_service,
+            agent_service,
+            '/usr/local/bin/log-shipper',
+            always
+        )-_,
+        login_mapping(agent_service, agent_u)-_,
+        selinux_user_role(agent_u, agent_r)-_,
+        role_type(agent_r, ai_agent_t)-_,
+        file_context('/usr/local/bin/log-shipper', log_shipper_exec_t, file)-_,
+        type_transition(init_t, log_shipper_exec_t, log_shipper_t)-_
+    ]).
+
+test(audit_finding_service_network_exposure_evidence) :-
+    once(audit_finding_with_evidence(
+        service_ai_agent_network_exposure,
+        Finding
+    )),
+    assertion(Finding.service == ai_agent_service),
+    assertion(Finding.evidence = [
+        service_unit(
+            ai_agent_service,
+            agent_service,
+            '/usr/local/bin/ai-agentd',
+            always
+        )-_,
+        login_mapping(agent_service, agent_u)-_,
+        selinux_user_role(agent_u, agent_r)-_,
+        role_type(agent_r, ai_agent_t)-_,
+        file_context('/usr/local/bin/ai-agentd', ai_agent_exec_t, file)-_,
+        type_transition(init_t, ai_agent_exec_t, ai_agent_t)-_,
+        has_attribute(ai_agent_t, ai_agent_domain)-_,
+        port_context(80, http_port_t, tcp)-_,
+        allow(ai_agent_t, http_port_t, tcp_socket, name_connect)-_,
+        firewall_egress_rule(ai_agent_t, tcp, 80, allow, web_api_baseline)-_
+    ]).
+
+test(audit_finding_service_syscall_block_evidence) :-
+    once((
+        audit_finding_with_evidence(service_ai_agent_syscall_block, Finding),
+        Finding.syscall == clone3
+    )),
+    assertion(Finding.service == ai_agent_service),
+    assertion(Finding.evidence = [
+        service_unit(
+            ai_agent_service,
+            agent_service,
+            '/usr/local/bin/ai-agentd',
+            always
+        )-_,
+        login_mapping(agent_service, agent_u)-_,
+        selinux_user_role(agent_u, agent_r)-_,
+        role_type(agent_r, ai_agent_t)-_,
+        file_context('/usr/local/bin/ai-agentd', ai_agent_exec_t, file)-_,
+        type_transition(init_t, ai_agent_exec_t, ai_agent_t)-_,
+        has_attribute(ai_agent_t, ai_agent_domain)-_,
+        seccomp_profile(ai_agent_t, ai_agent_restricted)-_,
+        seccomp_rule(ai_agent_restricted, clone3, deny, no_unprivileged_namespace_creation)-_
+    ]).
+
+test(audit_finding_service_resource_limit_evidence) :-
+    once((
+        audit_finding_with_evidence(service_ai_agent_resource_limit, Finding),
+        Finding.resource == pids
+    )),
+    assertion(Finding.service == ai_agent_service),
+    assertion(Finding.evidence = [
+        service_unit(
+            ai_agent_service,
+            agent_service,
+            '/usr/local/bin/ai-agentd',
+            always
+        )-_,
+        login_mapping(agent_service, agent_u)-_,
+        selinux_user_role(agent_u, agent_r)-_,
+        role_type(agent_r, ai_agent_t)-_,
+        file_context('/usr/local/bin/ai-agentd', ai_agent_exec_t, file)-_,
+        type_transition(init_t, ai_agent_exec_t, ai_agent_t)-_,
+        has_attribute(ai_agent_t, ai_agent_domain)-_,
+        cgroup_assignment(ai_agent_t, ai_agent_slice)-_,
+        cgroup_limit(ai_agent_slice, pids, 64, count, pids_max_64)-_
     ]).
 
 :- end_tests(selinux_rules).

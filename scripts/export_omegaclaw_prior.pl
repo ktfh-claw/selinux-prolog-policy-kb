@@ -71,6 +71,7 @@ baseline_query_lines([
     'metta (|- ((==> (seccomp-rule ai_agent_restricted clone3 deny no_unprivileged_namespace_creation) ai_agent_clone3_blocked_by_seccomp) (stv 1.0 0.95)) ((seccomp-rule ai_agent_restricted clone3 deny no_unprivileged_namespace_creation) (stv 1.0 0.95)))',
     'metta (|- ((==> (cgroup-limit ai_agent_slice pids 64 count pids_max_64) ai_agent_pids_limited_by_cgroup) (stv 1.0 0.95)) ((cgroup-limit ai_agent_slice pids 64 count pids_max_64) (stv 1.0 0.95)))',
     'metta (|- ((==> (login-mapping agent_service agent_u) agent_service_maps_to_sensitive_agent_domain) (stv 1.0 0.95)) ((login-mapping agent_service agent_u) (stv 1.0 0.95)))',
+    'metta (|- ((==> (service-unit mislabelled_agent_service agent_service "/usr/local/bin/log-shipper" always) service_domain_mismatch_mislabelled_agent_service) (stv 1.0 0.95)) ((service-unit mislabelled_agent_service agent_service "/usr/local/bin/log-shipper" always) (stv 1.0 0.95)))',
     '```'
 ]).
 
@@ -83,5 +84,5 @@ boundary_lines([
     '',
     '## Soundness Boundary',
     '',
-    'This fixture models only simple boolean-gated conditionals, explicit constraint-denial facts, resolved file and port contexts, type bounds, login/user/role/type mappings, capability/process-class grants, coarse firewall egress rules, normalized seccomp syscall rules, normalized cgroup resource-limit summaries, and a narrow read-side MLS/MCS range check. It does not model nested conditional expressions, full SELinux constraint expressions, write-side MLS/MCS range algebra, role transitions, DAC outcome checks, namespaces, or full firewall/seccomp/cgroup policy.'
+    'This fixture models only simple boolean-gated conditionals, explicit constraint-denial facts, resolved file and port contexts, type bounds, login/user/role/type mappings, service-unit summaries, capability/process-class grants, coarse firewall egress rules, normalized seccomp syscall rules, normalized cgroup resource-limit summaries, and a narrow read-side MLS/MCS range check. It does not model nested conditional expressions, full SELinux constraint expressions, write-side MLS/MCS range algebra, role transitions, DAC outcome checks, namespaces, full systemd semantics, or full firewall/seccomp/cgroup policy.'
 ]).

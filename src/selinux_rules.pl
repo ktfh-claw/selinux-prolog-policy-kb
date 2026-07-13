@@ -26,6 +26,11 @@
     login_can_access/4,
     login_sensitive_capability/4,
     login_sensitive_process_permission/4,
+    service_domain/2,
+    service_domain_mismatch/3,
+    service_ai_agent_network_exposure/5,
+    service_ai_agent_syscall_block/4,
+    service_ai_agent_resource_limit/6,
     risky_web_shell_path/3,
     risky_executable_content_path/3,
     can_domain_transition/3,
@@ -180,6 +185,29 @@ login_sensitive_capability(Login, Domain, Capability, Reason) :-
 login_sensitive_process_permission(Login, Domain, Permission, Reason) :-
     login_domain(Login, Domain),
     has_sensitive_process_permission(Domain, Permission, Reason).
+
+service_domain(Service, Domain) :-
+    service_unit(Service, Login, EntrypointPath, _RestartPolicy),
+    login_domain(Login, Domain),
+    can_domain_transition_via_path(init_t, EntrypointPath, Domain).
+
+service_domain_mismatch(Service, ExpectedDomain, TransitionDomain) :-
+    service_unit(Service, Login, EntrypointPath, _RestartPolicy),
+    login_domain(Login, ExpectedDomain),
+    can_domain_transition_via_path(init_t, EntrypointPath, TransitionDomain),
+    ExpectedDomain \== TransitionDomain.
+
+service_ai_agent_network_exposure(Service, Domain, Protocol, Port, Reason) :-
+    service_domain(Service, Domain),
+    ai_agent_network_exposure(Domain, Protocol, Port, Reason).
+
+service_ai_agent_syscall_block(Service, Domain, Syscall, Reason) :-
+    service_domain(Service, Domain),
+    ai_agent_syscall_block(Domain, Syscall, Reason).
+
+service_ai_agent_resource_limit(Service, Domain, Resource, Value, Unit, Reason) :-
+    service_domain(Service, Domain),
+    ai_agent_resource_limit(Domain, Resource, Value, Unit, Reason).
 
 risky_web_shell_path(Source, Target, write_executable_content) :-
     effective_allow(Source, Target, file, write),
@@ -351,6 +379,47 @@ audit_finding(login_sensitive_process_permission, finding{
     reason: Reason
 }) :-
     login_sensitive_process_permission(Login, Domain, Permission, Reason).
+
+audit_finding(service_domain_mismatch, finding{
+    service: Service,
+    expected_domain: ExpectedDomain,
+    transition_domain: TransitionDomain
+}) :-
+    service_domain_mismatch(Service, ExpectedDomain, TransitionDomain).
+
+audit_finding(service_ai_agent_network_exposure, finding{
+    service: Service,
+    domain: Domain,
+    protocol: Protocol,
+    port: Port,
+    reason: Reason
+}) :-
+    service_ai_agent_network_exposure(Service, Domain, Protocol, Port, Reason).
+
+audit_finding(service_ai_agent_syscall_block, finding{
+    service: Service,
+    domain: Domain,
+    syscall: Syscall,
+    reason: Reason
+}) :-
+    service_ai_agent_syscall_block(Service, Domain, Syscall, Reason).
+
+audit_finding(service_ai_agent_resource_limit, finding{
+    service: Service,
+    domain: Domain,
+    resource: Resource,
+    value: Value,
+    unit: Unit,
+    reason: Reason
+}) :-
+    service_ai_agent_resource_limit(
+        Service,
+        Domain,
+        Resource,
+        Value,
+        Unit,
+        Reason
+    ).
 
 audit_finding_with_evidence(Kind, FindingWithEvidence) :-
     audit_finding(Kind, Finding),
@@ -608,3 +677,143 @@ audit_evidence(login_sensitive_process_permission, Finding, Evidence) :-
     fact_source(role_type(Role, Domain), RoleTypeSource),
     fact_source(allow(Domain, self, process, Permission), AllowSource),
     fact_source(sensitive_process_permission(Permission, Reason), PermissionSource).
+
+audit_evidence(service_domain_mismatch, Finding, Evidence) :-
+    Service = Finding.service,
+    ExpectedDomain = Finding.expected_domain,
+    TransitionDomain = Finding.transition_domain,
+    service_unit(Service, Login, EntrypointPath, RestartPolicy),
+    login_mapping(Login, SelinuxUser),
+    selinux_user_role(SelinuxUser, Role),
+    file_context(EntrypointPath, EntrypointType, file),
+    Evidence = [
+        service_unit(Service, Login, EntrypointPath, RestartPolicy)-ServiceSource,
+        login_mapping(Login, SelinuxUser)-LoginSource,
+        selinux_user_role(SelinuxUser, Role)-UserRoleSource,
+        role_type(Role, ExpectedDomain)-RoleTypeSource,
+        file_context(EntrypointPath, EntrypointType, file)-FileContextSource,
+        type_transition(init_t, EntrypointType, TransitionDomain)-TransitionSource
+    ],
+    fact_source(
+        service_unit(Service, Login, EntrypointPath, RestartPolicy),
+        ServiceSource
+    ),
+    fact_source(login_mapping(Login, SelinuxUser), LoginSource),
+    fact_source(selinux_user_role(SelinuxUser, Role), UserRoleSource),
+    fact_source(role_type(Role, ExpectedDomain), RoleTypeSource),
+    fact_source(file_context(EntrypointPath, EntrypointType, file), FileContextSource),
+    fact_source(
+        type_transition(init_t, EntrypointType, TransitionDomain),
+        TransitionSource
+    ).
+
+audit_evidence(service_ai_agent_network_exposure, Finding, Evidence) :-
+    Service = Finding.service,
+    Domain = Finding.domain,
+    Protocol = Finding.protocol,
+    Port = Finding.port,
+    Reason = Finding.reason,
+    service_unit(Service, Login, EntrypointPath, RestartPolicy),
+    login_mapping(Login, SelinuxUser),
+    selinux_user_role(SelinuxUser, Role),
+    file_context(EntrypointPath, EntrypointType, file),
+    port_context(Port, PortType, Protocol),
+    socket_class_for_protocol(Protocol, SocketClass),
+    Evidence = [
+        service_unit(Service, Login, EntrypointPath, RestartPolicy)-ServiceSource,
+        login_mapping(Login, SelinuxUser)-LoginSource,
+        selinux_user_role(SelinuxUser, Role)-UserRoleSource,
+        role_type(Role, Domain)-RoleTypeSource,
+        file_context(EntrypointPath, EntrypointType, file)-FileContextSource,
+        type_transition(init_t, EntrypointType, Domain)-TransitionSource,
+        has_attribute(Domain, ai_agent_domain)-AgentAttributeSource,
+        port_context(Port, PortType, Protocol)-PortContextSource,
+        allow(Domain, PortType, SocketClass, name_connect)-AllowSource,
+        firewall_egress_rule(Domain, Protocol, Port, allow, Reason)-FirewallSource
+    ],
+    fact_source(
+        service_unit(Service, Login, EntrypointPath, RestartPolicy),
+        ServiceSource
+    ),
+    fact_source(login_mapping(Login, SelinuxUser), LoginSource),
+    fact_source(selinux_user_role(SelinuxUser, Role), UserRoleSource),
+    fact_source(role_type(Role, Domain), RoleTypeSource),
+    fact_source(file_context(EntrypointPath, EntrypointType, file), FileContextSource),
+    fact_source(type_transition(init_t, EntrypointType, Domain), TransitionSource),
+    fact_source(has_attribute(Domain, ai_agent_domain), AgentAttributeSource),
+    fact_source(port_context(Port, PortType, Protocol), PortContextSource),
+    fact_source(allow(Domain, PortType, SocketClass, name_connect), AllowSource),
+    fact_source(
+        firewall_egress_rule(Domain, Protocol, Port, allow, Reason),
+        FirewallSource
+    ).
+
+audit_evidence(service_ai_agent_syscall_block, Finding, Evidence) :-
+    Service = Finding.service,
+    Domain = Finding.domain,
+    Syscall = Finding.syscall,
+    Reason = Finding.reason,
+    service_unit(Service, Login, EntrypointPath, RestartPolicy),
+    login_mapping(Login, SelinuxUser),
+    selinux_user_role(SelinuxUser, Role),
+    file_context(EntrypointPath, EntrypointType, file),
+    seccomp_profile(Domain, Profile),
+    Evidence = [
+        service_unit(Service, Login, EntrypointPath, RestartPolicy)-ServiceSource,
+        login_mapping(Login, SelinuxUser)-LoginSource,
+        selinux_user_role(SelinuxUser, Role)-UserRoleSource,
+        role_type(Role, Domain)-RoleTypeSource,
+        file_context(EntrypointPath, EntrypointType, file)-FileContextSource,
+        type_transition(init_t, EntrypointType, Domain)-TransitionSource,
+        has_attribute(Domain, ai_agent_domain)-AgentAttributeSource,
+        seccomp_profile(Domain, Profile)-ProfileSource,
+        seccomp_rule(Profile, Syscall, deny, Reason)-RuleSource
+    ],
+    fact_source(
+        service_unit(Service, Login, EntrypointPath, RestartPolicy),
+        ServiceSource
+    ),
+    fact_source(login_mapping(Login, SelinuxUser), LoginSource),
+    fact_source(selinux_user_role(SelinuxUser, Role), UserRoleSource),
+    fact_source(role_type(Role, Domain), RoleTypeSource),
+    fact_source(file_context(EntrypointPath, EntrypointType, file), FileContextSource),
+    fact_source(type_transition(init_t, EntrypointType, Domain), TransitionSource),
+    fact_source(has_attribute(Domain, ai_agent_domain), AgentAttributeSource),
+    fact_source(seccomp_profile(Domain, Profile), ProfileSource),
+    fact_source(seccomp_rule(Profile, Syscall, deny, Reason), RuleSource).
+
+audit_evidence(service_ai_agent_resource_limit, Finding, Evidence) :-
+    Service = Finding.service,
+    Domain = Finding.domain,
+    Resource = Finding.resource,
+    Value = Finding.value,
+    Unit = Finding.unit,
+    Reason = Finding.reason,
+    service_unit(Service, Login, EntrypointPath, RestartPolicy),
+    login_mapping(Login, SelinuxUser),
+    selinux_user_role(SelinuxUser, Role),
+    file_context(EntrypointPath, EntrypointType, file),
+    cgroup_assignment(Domain, Cgroup),
+    Evidence = [
+        service_unit(Service, Login, EntrypointPath, RestartPolicy)-ServiceSource,
+        login_mapping(Login, SelinuxUser)-LoginSource,
+        selinux_user_role(SelinuxUser, Role)-UserRoleSource,
+        role_type(Role, Domain)-RoleTypeSource,
+        file_context(EntrypointPath, EntrypointType, file)-FileContextSource,
+        type_transition(init_t, EntrypointType, Domain)-TransitionSource,
+        has_attribute(Domain, ai_agent_domain)-AgentAttributeSource,
+        cgroup_assignment(Domain, Cgroup)-AssignmentSource,
+        cgroup_limit(Cgroup, Resource, Value, Unit, Reason)-LimitSource
+    ],
+    fact_source(
+        service_unit(Service, Login, EntrypointPath, RestartPolicy),
+        ServiceSource
+    ),
+    fact_source(login_mapping(Login, SelinuxUser), LoginSource),
+    fact_source(selinux_user_role(SelinuxUser, Role), UserRoleSource),
+    fact_source(role_type(Role, Domain), RoleTypeSource),
+    fact_source(file_context(EntrypointPath, EntrypointType, file), FileContextSource),
+    fact_source(type_transition(init_t, EntrypointType, Domain), TransitionSource),
+    fact_source(has_attribute(Domain, ai_agent_domain), AgentAttributeSource),
+    fact_source(cgroup_assignment(Domain, Cgroup), AssignmentSource),
+    fact_source(cgroup_limit(Cgroup, Resource, Value, Unit, Reason), LimitSource).

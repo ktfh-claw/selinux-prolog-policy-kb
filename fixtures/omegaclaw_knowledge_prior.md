@@ -19,8 +19,12 @@ Use these as structured facts for OmegaClaw MeTTa/NAL reasoning experiments.
 - `(allow httpd_t httpd_sys_content_t file read)`
 - `(allow httpd_t httpd_sys_script_exec_t file read)`
 - `(allow httpd_t httpd_sys_script_exec_t file write)`
+- `(allow init_t ai_agent_exec_t file entrypoint)`
+- `(allow init_t ai_agent_t process transition)`
 - `(allow init_t daemon_exec_t file entrypoint)`
 - `(allow init_t daemon_t process transition)`
+- `(allow init_t log_shipper_exec_t file entrypoint)`
+- `(allow init_t log_shipper_t process transition)`
 - `(allow log_shipper_t self capability audit_write)`
 - `(allow log_shipper_t self process sigchld)`
 - `(allow sandbox_secret_parent_t secret_doc_t file read)`
@@ -55,6 +59,12 @@ Use these as structured facts for OmegaClaw MeTTa/NAL reasoning experiments.
 - `(audit-finding runtime_resource_limit (reason pids_max_64) (resource pids) (source ai_agent_t) (unit count) (value 64))`
 - `(audit-finding runtime_syscall_block (reason block_kernel_observability) (source ai_agent_t) (syscall bpf))`
 - `(audit-finding runtime_syscall_block (reason no_unprivileged_namespace_creation) (source ai_agent_t) (syscall clone3))`
+- `(audit-finding service_ai_agent_network_exposure (domain ai_agent_t) (port 80) (protocol tcp) (reason web_api_baseline) (service ai_agent_service))`
+- `(audit-finding service_ai_agent_resource_limit (domain ai_agent_t) (reason memory_max_512m) (resource memory) (service ai_agent_service) (unit mebibytes) (value 512))`
+- `(audit-finding service_ai_agent_resource_limit (domain ai_agent_t) (reason pids_max_64) (resource pids) (service ai_agent_service) (unit count) (value 64))`
+- `(audit-finding service_ai_agent_syscall_block (domain ai_agent_t) (reason block_kernel_observability) (service ai_agent_service) (syscall bpf))`
+- `(audit-finding service_ai_agent_syscall_block (domain ai_agent_t) (reason no_unprivileged_namespace_creation) (service ai_agent_service) (syscall clone3))`
+- `(audit-finding service_domain_mismatch (expected_domain ai_agent_t) (service mislabelled_agent_service) (transition_domain log_shipper_t))`
 - `(audit-finding type_bound_blocked_allow (class file) (parent sandbox_secret_parent_t) (permission read) (reason parent_missing_effective_allow) (source sandbox_secret_reader_t) (target secret_doc_t))`
 - `(audit-finding type_bound_blocked_allow (class file) (parent sandbox_web_parent_t) (permission append) (reason parent_missing_effective_allow) (source sandbox_web_t) (target httpd_log_t))`
 - `(boolean-state httpd_can_network_connect true)`
@@ -71,6 +81,8 @@ Use these as structured facts for OmegaClaw MeTTa/NAL reasoning experiments.
 - `(file-context "/etc/shadow" shadow_t file)`
 - `(file-context "/home/alice/public_html/index.html" user_home_t file)`
 - `(file-context "/srv/secret/report.txt" secret_doc_t file)`
+- `(file-context "/usr/local/bin/ai-agentd" ai_agent_exec_t file)`
+- `(file-context "/usr/local/bin/log-shipper" log_shipper_exec_t file)`
 - `(file-context "/usr/sbin/exampled" daemon_exec_t file)`
 - `(file-context "/var/log/httpd/access.log" httpd_log_t file)`
 - `(file-context "/var/www/cgi-bin/admin.cgi" httpd_sys_script_exec_t file)`
@@ -115,9 +127,14 @@ Use these as structured facts for OmegaClaw MeTTa/NAL reasoning experiments.
 - `(sensitive-process-permission noatsecure unsafe_exec_environment)`
 - `(sensitivity-level s0 0)`
 - `(sensitivity-level s1 1)`
+- `(service-unit ai_agent_service agent_service "/usr/local/bin/ai-agentd" always)`
+- `(service-unit log_shipper_service log_shipper "/usr/local/bin/log-shipper" on_failure)`
+- `(service-unit mislabelled_agent_service agent_service "/usr/local/bin/log-shipper" always)`
 - `(type-bound sandbox_secret_reader_t sandbox_secret_parent_t)`
 - `(type-bound sandbox_web_t sandbox_web_parent_t)`
+- `(type-transition init_t ai_agent_exec_t ai_agent_t)`
 - `(type-transition init_t daemon_exec_t daemon_t)`
+- `(type-transition init_t log_shipper_exec_t log_shipper_t)`
 
 ## Baseline OmegaClaw Commands
 
@@ -139,6 +156,7 @@ metta (|- ((==> (firewall-egress-rule ai_agent_t tcp 5432 deny database_egress_b
 metta (|- ((==> (seccomp-rule ai_agent_restricted clone3 deny no_unprivileged_namespace_creation) ai_agent_clone3_blocked_by_seccomp) (stv 1.0 0.95)) ((seccomp-rule ai_agent_restricted clone3 deny no_unprivileged_namespace_creation) (stv 1.0 0.95)))
 metta (|- ((==> (cgroup-limit ai_agent_slice pids 64 count pids_max_64) ai_agent_pids_limited_by_cgroup) (stv 1.0 0.95)) ((cgroup-limit ai_agent_slice pids 64 count pids_max_64) (stv 1.0 0.95)))
 metta (|- ((==> (login-mapping agent_service agent_u) agent_service_maps_to_sensitive_agent_domain) (stv 1.0 0.95)) ((login-mapping agent_service agent_u) (stv 1.0 0.95)))
+metta (|- ((==> (service-unit mislabelled_agent_service agent_service "/usr/local/bin/log-shipper" always) service_domain_mismatch_mislabelled_agent_service) (stv 1.0 0.95)) ((service-unit mislabelled_agent_service agent_service "/usr/local/bin/log-shipper" always) (stv 1.0 0.95)))
 ```
 
 ## Expected Use
@@ -148,4 +166,4 @@ The useful result is not that the toy facts are realistic; it is whether OmegaCl
 
 ## Soundness Boundary
 
-This fixture models only simple boolean-gated conditionals, explicit constraint-denial facts, resolved file and port contexts, type bounds, login/user/role/type mappings, capability/process-class grants, coarse firewall egress rules, normalized seccomp syscall rules, normalized cgroup resource-limit summaries, and a narrow read-side MLS/MCS range check. It does not model nested conditional expressions, full SELinux constraint expressions, write-side MLS/MCS range algebra, role transitions, DAC outcome checks, namespaces, or full firewall/seccomp/cgroup policy.
+This fixture models only simple boolean-gated conditionals, explicit constraint-denial facts, resolved file and port contexts, type bounds, login/user/role/type mappings, service-unit summaries, capability/process-class grants, coarse firewall egress rules, normalized seccomp syscall rules, normalized cgroup resource-limit summaries, and a narrow read-side MLS/MCS range check. It does not model nested conditional expressions, full SELinux constraint expressions, write-side MLS/MCS range algebra, role transitions, DAC outcome checks, namespaces, full systemd semantics, or full firewall/seccomp/cgroup policy.

@@ -57,6 +57,12 @@ metta_line(Line) :-
     cgroup_limit(Cgroup, Resource, Value, Unit, Reason),
     sexpr_line(['cgroup-limit', Cgroup, Resource, Value, Unit, Reason], Line).
 metta_line(Line) :-
+    service_unit(Service, Login, EntrypointPath, RestartPolicy),
+    sexpr_line(
+        ['service-unit', Service, Login, EntrypointPath, RestartPolicy],
+        Line
+    ).
+metta_line(Line) :-
     login_mapping(Login, SelinuxUser),
     sexpr_line(['login-mapping', Login, SelinuxUser], Line).
 metta_line(Line) :-

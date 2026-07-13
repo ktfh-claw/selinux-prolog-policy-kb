@@ -85,6 +85,13 @@ test(omegaclaw_prior_contains_path_and_severity_baselines) :-
         _,
         _,
         _,
+        '(service-unit ai_agent_service agent_service "/usr/local/bin/ai-agentd" always)'
+    )),
+    once(sub_string(
+        Text,
+        _,
+        _,
+        _,
         '(boolean-state httpd_can_network_connect true)'
     )),
     once(sub_string(
@@ -226,6 +233,13 @@ test(omegaclaw_prior_contains_path_and_severity_baselines) :-
         _,
         _,
         'agent_service_maps_to_sensitive_agent_domain'
+    )),
+    once(sub_string(
+        Text,
+        _,
+        _,
+        _,
+        'service_domain_mismatch_mislabelled_agent_service'
     )),
     once(sub_string(
         Text,

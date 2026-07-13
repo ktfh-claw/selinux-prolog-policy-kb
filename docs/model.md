@@ -19,6 +19,7 @@ SETools-style policy analysis output:
 - `seccomp_rule(Profile, Syscall, Action, Reason)`
 - `cgroup_assignment(Source, Cgroup)`
 - `cgroup_limit(Cgroup, Resource, Value, Unit, Reason)`
+- `service_unit(Service, Login, EntrypointPath, RestartPolicy)`
 - `login_mapping(Login, SelinuxUser)`
 - `selinux_user_role(SelinuxUser, Role)`
 - `role_type(Role, Type)`
@@ -61,6 +62,11 @@ Derived predicates represent local audit questions:
 - `login_can_access/4`
 - `login_sensitive_capability/4`
 - `login_sensitive_process_permission/4`
+- `service_domain/2`
+- `service_domain_mismatch/3`
+- `service_ai_agent_network_exposure/5`
+- `service_ai_agent_syscall_block/4`
+- `service_ai_agent_resource_limit/6`
 - `risky_web_shell_path/3`
 - `risky_executable_content_path/3`
 - `can_domain_transition/3`
@@ -156,6 +162,14 @@ cgroup and then to resource caps such as `pids.max` and `memory.max`.
 not a model of controller inheritance, delegation, pressure metrics, or systemd
 unit semantics.
 
+`service_unit/4` stores a normalized service-manager summary with the service
+name, login identity, entrypoint path, and restart policy. `service_domain/2`
+requires the login-to-domain mapping and the `init_t` entrypoint transition to
+agree on the same domain. `service_domain_mismatch/3` exposes units where the
+configured login maps to one domain but the entrypoint transition resolves to
+another. Service-scoped AI-agent predicates reuse the existing network,
+seccomp, and cgroup checks after the unit domain is resolved.
+
 `fact_source/2` stores provenance for imported facts as structured metadata.
 `audit_finding_with_evidence/2` keeps the original finding shape and adds an
 `evidence` list whose entries pair each supporting fact with its source
@@ -181,5 +195,6 @@ It does not yet model:
 - role transitions and role dominance
 - file-context path matching
 - Linux DAC outcomes, namespaces, or full firewall/seccomp/cgroup policy
+- full systemd unit semantics or service dependency/order behavior
 
 Those should be added in small commits with tests.

@@ -28,6 +28,8 @@ The first model layer covers:
   `seccomp_rule(Profile, Syscall, Action, Reason)`
 - normalized cgroup facts: `cgroup_assignment(Source, Cgroup)` and
   `cgroup_limit(Cgroup, Resource, Value, Unit, Reason)`
+- normalized service-unit facts:
+  `service_unit(Service, Login, EntrypointPath, RestartPolicy)`
 - login/user/role/type mapping facts: `login_mapping(Login, SelinuxUser)`,
   `selinux_user_role(SelinuxUser, Role)`, and `role_type(Role, Type)`
 - type attributes: `has_attribute(Type, Attribute)`
@@ -40,8 +42,9 @@ The first model layer covers:
   transition reachability, path-level access, port-level `name_connect`
   reachability, constraint-blocked allows, type-bound-blocked allows, MLS
   range-blocked reads, sensitive capability and process-permission grants for
-  AI-agent domains and mapped logins, runtime network and syscall block checks,
-  runtime cgroup resource-limit checks, high-risk policy regressions, and
+  AI-agent domains, mapped logins, and service units, runtime network and
+  syscall block checks, runtime cgroup resource-limit checks, service-domain
+  mismatch checks, high-risk policy regressions, and
   severity classification for policy diffs and findings with structured
   evidence
 

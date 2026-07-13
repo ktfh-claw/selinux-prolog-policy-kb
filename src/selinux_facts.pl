@@ -13,6 +13,7 @@
     seccomp_rule/4,
     cgroup_assignment/2,
     cgroup_limit/5,
+    service_unit/4,
     login_mapping/2,
     selinux_user_role/2,
     role_type/2,
@@ -32,6 +33,10 @@ allow(httpd_t, httpd_sys_script_exec_t, file, write).
 allow(httpd_t, httpd_sys_script_exec_t, file, read).
 allow(init_t, daemon_exec_t, file, entrypoint).
 allow(init_t, daemon_t, process, transition).
+allow(init_t, ai_agent_exec_t, file, entrypoint).
+allow(init_t, ai_agent_t, process, transition).
+allow(init_t, log_shipper_exec_t, file, entrypoint).
+allow(init_t, log_shipper_t, process, transition).
 allow(user_t, secret_doc_t, file, read).
 allow(auditor_t, secret_doc_t, file, read).
 allow(auditor_limited_t, secret_doc_t, file, read).
@@ -100,6 +105,15 @@ cgroup_limit(ai_agent_slice, pids, 64, count, pids_max_64).
 cgroup_limit(ai_agent_slice, memory, 512, mebibytes, memory_max_512m).
 cgroup_limit(log_shipper_slice, memory, 256, mebibytes, log_memory_cap).
 
+service_unit(ai_agent_service, agent_service, '/usr/local/bin/ai-agentd', always).
+service_unit(log_shipper_service, log_shipper, '/usr/local/bin/log-shipper', on_failure).
+service_unit(
+    mislabelled_agent_service,
+    agent_service,
+    '/usr/local/bin/log-shipper',
+    always
+).
+
 login_mapping(alice, user_u).
 login_mapping(agent_service, agent_u).
 login_mapping(log_shipper, log_u).
@@ -118,6 +132,8 @@ has_attribute(httpd_sys_script_exec_t, executable_content).
 has_attribute(shadow_t, credential_store).
 
 type_transition(init_t, daemon_exec_t, daemon_t).
+type_transition(init_t, ai_agent_exec_t, ai_agent_t).
+type_transition(init_t, log_shipper_exec_t, log_shipper_t).
 
 new_allow(policy_v2, httpd_t, shadow_t, file, read).
 new_allow(policy_v2, httpd_t, httpd_sys_script_exec_t, file, write).
@@ -128,6 +144,8 @@ file_context('/var/www/cgi-bin/admin.cgi', httpd_sys_script_exec_t, file).
 file_context('/var/log/httpd/access.log', httpd_log_t, file).
 file_context('/etc/shadow', shadow_t, file).
 file_context('/usr/sbin/exampled', daemon_exec_t, file).
+file_context('/usr/local/bin/ai-agentd', ai_agent_exec_t, file).
+file_context('/usr/local/bin/log-shipper', log_shipper_exec_t, file).
 file_context('/home/alice/public_html/index.html', user_home_t, file).
 file_context('/srv/secret/report.txt', secret_doc_t, file).
 
@@ -157,6 +175,22 @@ fact_source(
 fact_source(
     allow(init_t, daemon_t, process, transition),
     source{tool: setools, artifact: 'toy_policy.allow', selector: 'allow init_t daemon_t:process transition'}
+).
+fact_source(
+    allow(init_t, ai_agent_exec_t, file, entrypoint),
+    source{tool: setools, artifact: 'toy_policy.allow', selector: 'allow init_t ai_agent_exec_t:file entrypoint'}
+).
+fact_source(
+    allow(init_t, ai_agent_t, process, transition),
+    source{tool: setools, artifact: 'toy_policy.allow', selector: 'allow init_t ai_agent_t:process transition'}
+).
+fact_source(
+    allow(init_t, log_shipper_exec_t, file, entrypoint),
+    source{tool: setools, artifact: 'toy_policy.allow', selector: 'allow init_t log_shipper_exec_t:file entrypoint'}
+).
+fact_source(
+    allow(init_t, log_shipper_t, process, transition),
+    source{tool: setools, artifact: 'toy_policy.allow', selector: 'allow init_t log_shipper_t:process transition'}
 ).
 fact_source(
     allow(user_t, secret_doc_t, file, read),
@@ -371,6 +405,24 @@ fact_source(
 ).
 
 fact_source(
+    service_unit(ai_agent_service, agent_service, '/usr/local/bin/ai-agentd', always),
+    source{tool: systemd, artifact: 'toy_units', selector: 'ai-agent.service User=agent_service ExecStart=/usr/local/bin/ai-agentd Restart=always'}
+).
+fact_source(
+    service_unit(log_shipper_service, log_shipper, '/usr/local/bin/log-shipper', on_failure),
+    source{tool: systemd, artifact: 'toy_units', selector: 'log-shipper.service User=log_shipper ExecStart=/usr/local/bin/log-shipper Restart=on-failure'}
+).
+fact_source(
+    service_unit(
+        mislabelled_agent_service,
+        agent_service,
+        '/usr/local/bin/log-shipper',
+        always
+    ),
+    source{tool: systemd, artifact: 'toy_units', selector: 'mislabelled-agent.service User=agent_service ExecStart=/usr/local/bin/log-shipper Restart=always'}
+).
+
+fact_source(
     login_mapping(alice, user_u),
     source{tool: semanage, artifact: 'toy_login_mappings', selector: 'alice -> user_u'}
 ).
@@ -430,6 +482,14 @@ fact_source(
     type_transition(init_t, daemon_exec_t, daemon_t),
     source{tool: setools, artifact: 'toy_policy.transitions', selector: 'type_transition init_t daemon_exec_t:process daemon_t'}
 ).
+fact_source(
+    type_transition(init_t, ai_agent_exec_t, ai_agent_t),
+    source{tool: setools, artifact: 'toy_policy.transitions', selector: 'type_transition init_t ai_agent_exec_t:process ai_agent_t'}
+).
+fact_source(
+    type_transition(init_t, log_shipper_exec_t, log_shipper_t),
+    source{tool: setools, artifact: 'toy_policy.transitions', selector: 'type_transition init_t log_shipper_exec_t:process log_shipper_t'}
+).
 
 fact_source(
     new_allow(policy_v2, httpd_t, shadow_t, file, read),
@@ -463,6 +523,14 @@ fact_source(
 fact_source(
     file_context('/usr/sbin/exampled', daemon_exec_t, file),
     source{tool: matchpathcon, artifact: 'toy_file_contexts', selector: '/usr/sbin/exampled'}
+).
+fact_source(
+    file_context('/usr/local/bin/ai-agentd', ai_agent_exec_t, file),
+    source{tool: matchpathcon, artifact: 'toy_file_contexts', selector: '/usr/local/bin/ai-agentd'}
+).
+fact_source(
+    file_context('/usr/local/bin/log-shipper', log_shipper_exec_t, file),
+    source{tool: matchpathcon, artifact: 'toy_file_contexts', selector: '/usr/local/bin/log-shipper'}
 ).
 fact_source(
     file_context('/home/alice/public_html/index.html', user_home_t, file),
