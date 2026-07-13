@@ -5,6 +5,8 @@
     can_read_web_content/1,
     can_read_path/2,
     can_name_connect_port/3,
+    runtime_name_connect_allowed/3,
+    runtime_name_connect_blocked/4,
     access_denied_by_constraint/5,
     access_denied_by_type_bound/6,
     sensitivity_dominates/2,
@@ -14,6 +16,7 @@
     ai_agent_sensitive_capability/3,
     has_sensitive_process_permission/3,
     ai_agent_sensitive_process_permission/3,
+    ai_agent_network_exposure/4,
     login_domain/2,
     login_can_access/4,
     login_sensitive_capability/4,
@@ -65,6 +68,15 @@ can_name_connect_port(Source, Protocol, Port) :-
     port_context(Port, PortType, Protocol),
     socket_class_for_protocol(Protocol, SocketClass),
     effective_allow(Source, PortType, SocketClass, name_connect).
+
+runtime_name_connect_allowed(Source, Protocol, Port) :-
+    can_name_connect_port(Source, Protocol, Port),
+    firewall_egress_rule(Source, Protocol, Port, allow, _Reason),
+    \+ firewall_egress_rule(Source, Protocol, Port, deny, _DenyReason).
+
+runtime_name_connect_blocked(Source, Protocol, Port, Reason) :-
+    can_name_connect_port(Source, Protocol, Port),
+    firewall_egress_rule(Source, Protocol, Port, deny, Reason).
 
 socket_class_for_protocol(tcp, tcp_socket).
 socket_class_for_protocol(udp, udp_socket).
@@ -120,6 +132,11 @@ has_sensitive_process_permission(Source, Permission, Reason) :-
 ai_agent_sensitive_process_permission(Source, Permission, Reason) :-
     has_attribute(Source, ai_agent_domain),
     has_sensitive_process_permission(Source, Permission, Reason).
+
+ai_agent_network_exposure(Source, Protocol, Port, Reason) :-
+    has_attribute(Source, ai_agent_domain),
+    runtime_name_connect_allowed(Source, Protocol, Port),
+    firewall_egress_rule(Source, Protocol, Port, allow, Reason).
 
 login_domain(Login, Domain) :-
     login_mapping(Login, SelinuxUser),
@@ -244,6 +261,22 @@ audit_finding(ai_agent_sensitive_process_permission, finding{
     reason: Reason
 }) :-
     ai_agent_sensitive_process_permission(Source, Permission, Reason).
+
+audit_finding(ai_agent_network_exposure, finding{
+    source: Source,
+    protocol: Protocol,
+    port: Port,
+    reason: Reason
+}) :-
+    ai_agent_network_exposure(Source, Protocol, Port, Reason).
+
+audit_finding(runtime_network_block, finding{
+    source: Source,
+    protocol: Protocol,
+    port: Port,
+    reason: Reason
+}) :-
+    runtime_name_connect_blocked(Source, Protocol, Port, Reason).
 
 audit_finding(login_sensitive_capability, finding{
     login: Login,
@@ -381,6 +414,46 @@ audit_evidence(ai_agent_sensitive_process_permission, Finding, Evidence) :-
     fact_source(allow(Source, self, process, Permission), AllowSource),
     fact_source(has_attribute(Source, ai_agent_domain), AgentAttributeSource),
     fact_source(sensitive_process_permission(Permission, Reason), PermissionSource).
+
+audit_evidence(ai_agent_network_exposure, Finding, Evidence) :-
+    Source = Finding.source,
+    Protocol = Finding.protocol,
+    Port = Finding.port,
+    Reason = Finding.reason,
+    port_context(Port, PortType, Protocol),
+    socket_class_for_protocol(Protocol, SocketClass),
+    Evidence = [
+        has_attribute(Source, ai_agent_domain)-AgentAttributeSource,
+        port_context(Port, PortType, Protocol)-PortContextSource,
+        allow(Source, PortType, SocketClass, name_connect)-AllowSource,
+        firewall_egress_rule(Source, Protocol, Port, allow, Reason)-FirewallSource
+    ],
+    fact_source(has_attribute(Source, ai_agent_domain), AgentAttributeSource),
+    fact_source(port_context(Port, PortType, Protocol), PortContextSource),
+    fact_source(allow(Source, PortType, SocketClass, name_connect), AllowSource),
+    fact_source(
+        firewall_egress_rule(Source, Protocol, Port, allow, Reason),
+        FirewallSource
+    ).
+
+audit_evidence(runtime_network_block, Finding, Evidence) :-
+    Source = Finding.source,
+    Protocol = Finding.protocol,
+    Port = Finding.port,
+    Reason = Finding.reason,
+    port_context(Port, PortType, Protocol),
+    socket_class_for_protocol(Protocol, SocketClass),
+    Evidence = [
+        port_context(Port, PortType, Protocol)-PortContextSource,
+        allow(Source, PortType, SocketClass, name_connect)-AllowSource,
+        firewall_egress_rule(Source, Protocol, Port, deny, Reason)-FirewallSource
+    ],
+    fact_source(port_context(Port, PortType, Protocol), PortContextSource),
+    fact_source(allow(Source, PortType, SocketClass, name_connect), AllowSource),
+    fact_source(
+        firewall_egress_rule(Source, Protocol, Port, deny, Reason),
+        FirewallSource
+    ).
 
 audit_evidence(login_sensitive_capability, Finding, Evidence) :-
     Login = Finding.login,

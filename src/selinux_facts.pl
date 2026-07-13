@@ -8,6 +8,7 @@
     type_bound/2,
     sensitive_capability/2,
     sensitive_process_permission/2,
+    firewall_egress_rule/5,
     login_mapping/2,
     selinux_user_role/2,
     role_type/2,
@@ -39,6 +40,8 @@ allow(ai_agent_t, self, capability, sys_admin).
 allow(ai_agent_t, self, capability, dac_override).
 allow(ai_agent_t, self, process, dyntransition).
 allow(ai_agent_t, self, process, noatsecure).
+allow(ai_agent_t, http_port_t, tcp_socket, name_connect).
+allow(ai_agent_t, postgresql_port_t, tcp_socket, name_connect).
 allow(log_shipper_t, self, capability, audit_write).
 allow(log_shipper_t, self, process, sigchld).
 
@@ -73,6 +76,10 @@ sensitive_capability(dac_override, dac_bypass).
 
 sensitive_process_permission(dyntransition, arbitrary_domain_transition).
 sensitive_process_permission(noatsecure, unsafe_exec_environment).
+
+firewall_egress_rule(ai_agent_t, tcp, 80, allow, web_api_baseline).
+firewall_egress_rule(ai_agent_t, tcp, 5432, deny, database_egress_block).
+firewall_egress_rule(log_shipper_t, tcp, 443, allow, log_export_baseline).
 
 login_mapping(alice, user_u).
 login_mapping(agent_service, agent_u).
@@ -181,6 +188,14 @@ fact_source(
     source{tool: setools, artifact: 'toy_policy.allow', selector: 'allow ai_agent_t self:process noatsecure'}
 ).
 fact_source(
+    allow(ai_agent_t, http_port_t, tcp_socket, name_connect),
+    source{tool: setools, artifact: 'toy_policy.allow', selector: 'allow ai_agent_t http_port_t:tcp_socket name_connect'}
+).
+fact_source(
+    allow(ai_agent_t, postgresql_port_t, tcp_socket, name_connect),
+    source{tool: setools, artifact: 'toy_policy.allow', selector: 'allow ai_agent_t postgresql_port_t:tcp_socket name_connect'}
+).
+fact_source(
     allow(log_shipper_t, self, capability, audit_write),
     source{tool: setools, artifact: 'toy_policy.allow', selector: 'allow log_shipper_t self:capability audit_write'}
 ).
@@ -273,6 +288,19 @@ fact_source(
 fact_source(
     sensitive_process_permission(noatsecure, unsafe_exec_environment),
     source{tool: local_rubric, artifact: 'process_permission_severity', selector: 'noatsecure'}
+).
+
+fact_source(
+    firewall_egress_rule(ai_agent_t, tcp, 80, allow, web_api_baseline),
+    source{tool: local_runtime_profile, artifact: 'toy_firewall_rules', selector: 'ai_agent_t tcp/80 allow'}
+).
+fact_source(
+    firewall_egress_rule(ai_agent_t, tcp, 5432, deny, database_egress_block),
+    source{tool: local_runtime_profile, artifact: 'toy_firewall_rules', selector: 'ai_agent_t tcp/5432 deny'}
+).
+fact_source(
+    firewall_egress_rule(log_shipper_t, tcp, 443, allow, log_export_baseline),
+    source{tool: local_runtime_profile, artifact: 'toy_firewall_rules', selector: 'log_shipper_t tcp/443 allow'}
 ).
 
 fact_source(

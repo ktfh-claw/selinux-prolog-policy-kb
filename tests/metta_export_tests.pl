@@ -50,6 +50,13 @@ test(omegaclaw_prior_contains_path_and_severity_baselines) :-
         _,
         _,
         _,
+        '(firewall-egress-rule ai_agent_t tcp 5432 deny database_egress_block)'
+    )),
+    once(sub_string(
+        Text,
+        _,
+        _,
+        _,
         '(boolean-state httpd_can_network_connect true)'
     )),
     once(sub_string(
@@ -163,6 +170,13 @@ test(omegaclaw_prior_contains_path_and_severity_baselines) :-
         _,
         _,
         'ai_agent_has_dyntransition'
+    )),
+    once(sub_string(
+        Text,
+        _,
+        _,
+        _,
+        'ai_agent_database_egress_blocked'
     )),
     once(sub_string(
         Text,

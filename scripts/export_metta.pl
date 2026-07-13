@@ -42,6 +42,9 @@ metta_line(Line) :-
     sensitive_process_permission(Permission, Reason),
     sexpr_line(['sensitive-process-permission', Permission, Reason], Line).
 metta_line(Line) :-
+    firewall_egress_rule(Source, Protocol, Port, Action, Reason),
+    sexpr_line(['firewall-egress-rule', Source, Protocol, Port, Action, Reason], Line).
+metta_line(Line) :-
     login_mapping(Login, SelinuxUser),
     sexpr_line(['login-mapping', Login, SelinuxUser], Line).
 metta_line(Line) :-

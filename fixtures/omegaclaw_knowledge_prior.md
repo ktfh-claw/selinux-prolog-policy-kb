@@ -7,6 +7,8 @@ The source facts are toy SETools/sepolicy_analysis-shaped facts, not a real host
 
 Use these as structured facts for OmegaClaw MeTTa/NAL reasoning experiments.
 
+- `(allow ai_agent_t http_port_t tcp_socket name_connect)`
+- `(allow ai_agent_t postgresql_port_t tcp_socket name_connect)`
 - `(allow ai_agent_t self capability dac_override)`
 - `(allow ai_agent_t self capability sys_admin)`
 - `(allow ai_agent_t self process dyntransition)`
@@ -27,6 +29,7 @@ Use these as structured facts for OmegaClaw MeTTa/NAL reasoning experiments.
 - `(allow sandbox_web_t httpd_log_t file append)`
 - `(allow sandbox_web_t httpd_sys_content_t file read)`
 - `(allow user_t secret_doc_t file read)`
+- `(audit-finding ai_agent_network_exposure (port 80) (protocol tcp) (reason web_api_baseline) (source ai_agent_t))`
 - `(audit-finding ai_agent_sensitive_capability (capability dac_override) (reason dac_bypass) (source ai_agent_t))`
 - `(audit-finding ai_agent_sensitive_capability (capability sys_admin) (reason kernel_administration) (source ai_agent_t))`
 - `(audit-finding ai_agent_sensitive_process_permission (permission dyntransition) (reason arbitrary_domain_transition) (source ai_agent_t))`
@@ -42,6 +45,7 @@ Use these as structured facts for OmegaClaw MeTTa/NAL reasoning experiments.
 - `(audit-finding mls_blocked_read (reason insufficient_mls_range) (source user_t) (target secret_doc_t))`
 - `(audit-finding risky_executable_content_path (path "/var/www/cgi-bin/admin.cgi") (reason write_executable_content) (source httpd_t))`
 - `(audit-finding risky_web_shell_path (reason write_executable_content) (source httpd_t) (target httpd_sys_script_exec_t))`
+- `(audit-finding runtime_network_block (port 5432) (protocol tcp) (reason database_egress_block) (source ai_agent_t))`
 - `(audit-finding type_bound_blocked_allow (class file) (parent sandbox_secret_parent_t) (permission read) (reason parent_missing_effective_allow) (source sandbox_secret_reader_t) (target secret_doc_t))`
 - `(audit-finding type_bound_blocked_allow (class file) (parent sandbox_web_parent_t) (permission append) (reason parent_missing_effective_allow) (source sandbox_web_t) (target httpd_log_t))`
 - `(boolean-state httpd_can_network_connect true)`
@@ -57,6 +61,9 @@ Use these as structured facts for OmegaClaw MeTTa/NAL reasoning experiments.
 - `(file-context "/var/log/httpd/access.log" httpd_log_t file)`
 - `(file-context "/var/www/cgi-bin/admin.cgi" httpd_sys_script_exec_t file)`
 - `(file-context "/var/www/html/index.html" httpd_sys_content_t file)`
+- `(firewall-egress-rule ai_agent_t tcp 5432 deny database_egress_block)`
+- `(firewall-egress-rule ai_agent_t tcp 80 allow web_api_baseline)`
+- `(firewall-egress-rule log_shipper_t tcp 443 allow log_export_baseline)`
 - `(has-attribute ai_agent_t ai_agent_domain)`
 - `(has-attribute httpd_sys_script_exec_t executable_content)`
 - `(has-attribute httpd_t webserver_domain)`
@@ -108,6 +115,7 @@ metta (|- ((==> (mls-range user_t s0 s0 (c0)) mls_blocked_secret_doc_read_for_us
 metta (|- ((==> (port-context 80 http_port_t tcp) can_name_connect_http_port_80) (stv 1.0 0.95)) ((port-context 80 http_port_t tcp) (stv 1.0 0.95)))
 metta (|- ((==> (allow ai_agent_t self capability dac_override) ai_agent_has_dac_override) (stv 1.0 0.95)) ((allow ai_agent_t self capability dac_override) (stv 1.0 0.95)))
 metta (|- ((==> (allow ai_agent_t self process dyntransition) ai_agent_has_dyntransition) (stv 1.0 0.95)) ((allow ai_agent_t self process dyntransition) (stv 1.0 0.95)))
+metta (|- ((==> (firewall-egress-rule ai_agent_t tcp 5432 deny database_egress_block) ai_agent_database_egress_blocked) (stv 1.0 0.95)) ((firewall-egress-rule ai_agent_t tcp 5432 deny database_egress_block) (stv 1.0 0.95)))
 metta (|- ((==> (login-mapping agent_service agent_u) agent_service_maps_to_sensitive_agent_domain) (stv 1.0 0.95)) ((login-mapping agent_service agent_u) (stv 1.0 0.95)))
 ```
 
@@ -118,4 +126,4 @@ The useful result is not that the toy facts are realistic; it is whether OmegaCl
 
 ## Soundness Boundary
 
-This fixture models only simple boolean-gated conditionals, explicit constraint-denial facts, resolved file and port contexts, type bounds, login/user/role/type mappings, capability/process-class grants, and a narrow read-side MLS/MCS range check. It does not model nested conditional expressions, full SELinux constraint expressions, write-side MLS/MCS range algebra, role transitions, DAC outcome checks, seccomp, namespaces, cgroups, or firewall policy.
+This fixture models only simple boolean-gated conditionals, explicit constraint-denial facts, resolved file and port contexts, type bounds, login/user/role/type mappings, capability/process-class grants, coarse firewall egress rules, and a narrow read-side MLS/MCS range check. It does not model nested conditional expressions, full SELinux constraint expressions, write-side MLS/MCS range algebra, role transitions, DAC outcome checks, seccomp, namespaces, cgroups, or full firewall policy.

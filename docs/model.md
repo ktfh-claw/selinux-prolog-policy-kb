@@ -14,6 +14,7 @@ SETools-style policy analysis output:
 - `type_bound(ChildType, ParentType)`
 - `sensitive_capability(Capability, Reason)`
 - `sensitive_process_permission(Permission, Reason)`
+- `firewall_egress_rule(Source, Protocol, Port, Action, Reason)`
 - `login_mapping(Login, SelinuxUser)`
 - `selinux_user_role(SelinuxUser, Role)`
 - `role_type(Role, Type)`
@@ -44,6 +45,9 @@ Derived predicates represent local audit questions:
 - `ai_agent_sensitive_capability/3`
 - `has_sensitive_process_permission/3`
 - `ai_agent_sensitive_process_permission/3`
+- `runtime_name_connect_allowed/3`
+- `runtime_name_connect_blocked/4`
+- `ai_agent_network_exposure/4`
 - `login_domain/2`
 - `login_can_access/4`
 - `login_sensitive_capability/4`
@@ -118,7 +122,15 @@ reach this model.
 `port_context/3` likewise stores already-resolved SELinux port labels. The
 current `can_name_connect_port/3` rule maps TCP and UDP protocols to their
 socket classes and checks effective `name_connect` permission against the
-resolved port type. Firewall policy and runtime socket state are out of scope.
+resolved port type.
+
+`firewall_egress_rule/5` is a coarse runtime policy layer over SELinux
+`name_connect` reachability. `runtime_name_connect_allowed/3` requires both
+SELinux `name_connect` access and an allow firewall rule, with explicit deny
+rules winning over allows for the same domain/protocol/port tuple.
+`runtime_name_connect_blocked/4` exposes the useful audit edge case where
+SELinux would permit a connection but a runtime firewall rule blocks it.
+This is intentionally a normalized rule list, not a packet-filter language.
 
 `fact_source/2` stores provenance for imported facts as structured metadata.
 `audit_finding_with_evidence/2` keeps the original finding shape and adds an
@@ -144,6 +156,6 @@ It does not yet model:
 - full SELinux constraint expressions and write-side MLS/MCS range algebra
 - role transitions and role dominance
 - file-context path matching
-- Linux DAC outcomes, seccomp, cgroups, namespaces, or firewall policy
+- Linux DAC outcomes, seccomp, cgroups, namespaces, or full firewall policy
 
 Those should be added in small commits with tests.

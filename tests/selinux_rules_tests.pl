@@ -29,6 +29,31 @@ test(port_name_connect_from_enabled_boolean) :-
 test(port_name_connect_denies_unallowed_database_port, [fail]) :-
     can_name_connect_port(httpd_t, tcp, 5432).
 
+test(ai_agent_selinux_can_name_connect_database_port) :-
+    once(can_name_connect_port(ai_agent_t, tcp, 5432)).
+
+test(runtime_allows_ai_agent_web_egress) :-
+    once(runtime_name_connect_allowed(ai_agent_t, tcp, 80)).
+
+test(runtime_blocks_ai_agent_database_egress, [fail]) :-
+    runtime_name_connect_allowed(ai_agent_t, tcp, 5432).
+
+test(runtime_name_connect_blocked_reason) :-
+    once(runtime_name_connect_blocked(
+        ai_agent_t,
+        tcp,
+        5432,
+        database_egress_block
+    )).
+
+test(ai_agent_network_exposure) :-
+    once(ai_agent_network_exposure(
+        ai_agent_t,
+        tcp,
+        80,
+        web_api_baseline
+    )).
+
 test(negative_path_write_static_content, [fail]) :-
     can_access_path(httpd_t, '/var/www/html/index.html', file, write).
 
@@ -282,6 +307,28 @@ test(audit_finding_ai_agent_process_permission_shape) :-
         }
     )).
 
+test(audit_finding_ai_agent_network_exposure_shape) :-
+    once(audit_finding(
+        ai_agent_network_exposure,
+        finding{
+            source: ai_agent_t,
+            protocol: tcp,
+            port: 80,
+            reason: web_api_baseline
+        }
+    )).
+
+test(audit_finding_runtime_network_block_shape) :-
+    once(audit_finding(
+        runtime_network_block,
+        finding{
+            source: ai_agent_t,
+            protocol: tcp,
+            port: 5432,
+            reason: database_egress_block
+        }
+    )).
+
 test(audit_finding_login_capability_shape) :-
     once(audit_finding(
         login_sensitive_capability,
@@ -382,6 +429,27 @@ test(audit_finding_ai_agent_process_permission_evidence) :-
         allow(ai_agent_t, self, process, noatsecure)-_,
         has_attribute(ai_agent_t, ai_agent_domain)-_,
         sensitive_process_permission(noatsecure, unsafe_exec_environment)-_
+    ]).
+
+test(audit_finding_ai_agent_network_exposure_evidence) :-
+    once(audit_finding_with_evidence(ai_agent_network_exposure, Finding)),
+    assertion(Finding.source == ai_agent_t),
+    assertion(Finding.port == 80),
+    assertion(Finding.evidence = [
+        has_attribute(ai_agent_t, ai_agent_domain)-_,
+        port_context(80, http_port_t, tcp)-_,
+        allow(ai_agent_t, http_port_t, tcp_socket, name_connect)-_,
+        firewall_egress_rule(ai_agent_t, tcp, 80, allow, web_api_baseline)-_
+    ]).
+
+test(audit_finding_runtime_network_block_evidence) :-
+    once(audit_finding_with_evidence(runtime_network_block, Finding)),
+    assertion(Finding.source == ai_agent_t),
+    assertion(Finding.port == 5432),
+    assertion(Finding.evidence = [
+        port_context(5432, postgresql_port_t, tcp)-_,
+        allow(ai_agent_t, postgresql_port_t, tcp_socket, name_connect)-_,
+        firewall_egress_rule(ai_agent_t, tcp, 5432, deny, database_egress_block)-_
     ]).
 
 test(audit_finding_login_capability_evidence) :-
