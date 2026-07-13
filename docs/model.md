@@ -15,6 +15,8 @@ SETools-style policy analysis output:
 - `sensitive_capability(Capability, Reason)`
 - `sensitive_process_permission(Permission, Reason)`
 - `firewall_egress_rule(Source, Protocol, Port, Action, Reason)`
+- `seccomp_profile(Source, Profile)`
+- `seccomp_rule(Profile, Syscall, Action, Reason)`
 - `login_mapping(Login, SelinuxUser)`
 - `selinux_user_role(SelinuxUser, Role)`
 - `role_type(Role, Type)`
@@ -48,6 +50,9 @@ Derived predicates represent local audit questions:
 - `runtime_name_connect_allowed/3`
 - `runtime_name_connect_blocked/4`
 - `ai_agent_network_exposure/4`
+- `runtime_syscall_allowed/2`
+- `runtime_syscall_blocked/3`
+- `ai_agent_syscall_block/3`
 - `login_domain/2`
 - `login_can_access/4`
 - `login_sensitive_capability/4`
@@ -132,6 +137,13 @@ rules winning over allows for the same domain/protocol/port tuple.
 SELinux would permit a connection but a runtime firewall rule blocks it.
 This is intentionally a normalized rule list, not a packet-filter language.
 
+`seccomp_profile/2` and `seccomp_rule/4` add a second normalized runtime policy
+layer. `runtime_syscall_allowed/2` requires an allow rule in the domain's
+profile and no matching deny rule. `runtime_syscall_blocked/3` exposes deny
+rules directly, and `ai_agent_syscall_block/3` scopes those blocks to domains
+tagged with `ai_agent_domain`. These facts are intentionally profile summaries,
+not raw BPF/seccomp filter evaluation.
+
 `fact_source/2` stores provenance for imported facts as structured metadata.
 `audit_finding_with_evidence/2` keeps the original finding shape and adds an
 `evidence` list whose entries pair each supporting fact with its source
@@ -156,6 +168,6 @@ It does not yet model:
 - full SELinux constraint expressions and write-side MLS/MCS range algebra
 - role transitions and role dominance
 - file-context path matching
-- Linux DAC outcomes, seccomp, cgroups, namespaces, or full firewall policy
+- Linux DAC outcomes, cgroups, namespaces, or full firewall/seccomp policy
 
 Those should be added in small commits with tests.

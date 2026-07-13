@@ -7,6 +7,9 @@
     can_name_connect_port/3,
     runtime_name_connect_allowed/3,
     runtime_name_connect_blocked/4,
+    runtime_syscall_allowed/2,
+    runtime_syscall_blocked/3,
+    ai_agent_syscall_block/3,
     access_denied_by_constraint/5,
     access_denied_by_type_bound/6,
     sensitivity_dominates/2,
@@ -77,6 +80,19 @@ runtime_name_connect_allowed(Source, Protocol, Port) :-
 runtime_name_connect_blocked(Source, Protocol, Port, Reason) :-
     can_name_connect_port(Source, Protocol, Port),
     firewall_egress_rule(Source, Protocol, Port, deny, Reason).
+
+runtime_syscall_allowed(Source, Syscall) :-
+    seccomp_profile(Source, Profile),
+    seccomp_rule(Profile, Syscall, allow, _Reason),
+    \+ seccomp_rule(Profile, Syscall, deny, _DenyReason).
+
+runtime_syscall_blocked(Source, Syscall, Reason) :-
+    seccomp_profile(Source, Profile),
+    seccomp_rule(Profile, Syscall, deny, Reason).
+
+ai_agent_syscall_block(Source, Syscall, Reason) :-
+    has_attribute(Source, ai_agent_domain),
+    runtime_syscall_blocked(Source, Syscall, Reason).
 
 socket_class_for_protocol(tcp, tcp_socket).
 socket_class_for_protocol(udp, udp_socket).
@@ -278,6 +294,20 @@ audit_finding(runtime_network_block, finding{
 }) :-
     runtime_name_connect_blocked(Source, Protocol, Port, Reason).
 
+audit_finding(runtime_syscall_block, finding{
+    source: Source,
+    syscall: Syscall,
+    reason: Reason
+}) :-
+    runtime_syscall_blocked(Source, Syscall, Reason).
+
+audit_finding(ai_agent_syscall_block, finding{
+    source: Source,
+    syscall: Syscall,
+    reason: Reason
+}) :-
+    ai_agent_syscall_block(Source, Syscall, Reason).
+
 audit_finding(login_sensitive_capability, finding{
     login: Login,
     domain: Domain,
@@ -454,6 +484,32 @@ audit_evidence(runtime_network_block, Finding, Evidence) :-
         firewall_egress_rule(Source, Protocol, Port, deny, Reason),
         FirewallSource
     ).
+
+audit_evidence(runtime_syscall_block, Finding, Evidence) :-
+    Source = Finding.source,
+    Syscall = Finding.syscall,
+    Reason = Finding.reason,
+    seccomp_profile(Source, Profile),
+    Evidence = [
+        seccomp_profile(Source, Profile)-ProfileSource,
+        seccomp_rule(Profile, Syscall, deny, Reason)-RuleSource
+    ],
+    fact_source(seccomp_profile(Source, Profile), ProfileSource),
+    fact_source(seccomp_rule(Profile, Syscall, deny, Reason), RuleSource).
+
+audit_evidence(ai_agent_syscall_block, Finding, Evidence) :-
+    Source = Finding.source,
+    Syscall = Finding.syscall,
+    Reason = Finding.reason,
+    seccomp_profile(Source, Profile),
+    Evidence = [
+        has_attribute(Source, ai_agent_domain)-AgentAttributeSource,
+        seccomp_profile(Source, Profile)-ProfileSource,
+        seccomp_rule(Profile, Syscall, deny, Reason)-RuleSource
+    ],
+    fact_source(has_attribute(Source, ai_agent_domain), AgentAttributeSource),
+    fact_source(seccomp_profile(Source, Profile), ProfileSource),
+    fact_source(seccomp_rule(Profile, Syscall, deny, Reason), RuleSource).
 
 audit_evidence(login_sensitive_capability, Finding, Evidence) :-
     Login = Finding.login,

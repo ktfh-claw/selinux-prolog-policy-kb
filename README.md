@@ -24,6 +24,8 @@ The first model layer covers:
   `sensitive_process_permission(Permission, Reason)`
 - coarse runtime firewall facts:
   `firewall_egress_rule(Source, Protocol, Port, Action, Reason)`
+- normalized seccomp facts: `seccomp_profile(Source, Profile)` and
+  `seccomp_rule(Profile, Syscall, Action, Reason)`
 - login/user/role/type mapping facts: `login_mapping(Login, SelinuxUser)`,
   `selinux_user_role(SelinuxUser, Role)`, and `role_type(Role, Type)`
 - type attributes: `has_attribute(Type, Attribute)`
@@ -36,9 +38,9 @@ The first model layer covers:
   transition reachability, path-level access, port-level `name_connect`
   reachability, constraint-blocked allows, type-bound-blocked allows, MLS
   range-blocked reads, sensitive capability and process-permission grants for
-  AI-agent domains and mapped logins, runtime network exposure/block checks,
-  high-risk policy regressions, and severity classification for policy diffs
-  and findings with structured evidence
+  AI-agent domains and mapped logins, runtime network and syscall block checks,
+  high-risk policy regressions, and severity classification for policy diffs and
+  findings with structured evidence
 
 ## Layout
 

@@ -57,6 +57,20 @@ test(omegaclaw_prior_contains_path_and_severity_baselines) :-
         _,
         _,
         _,
+        '(seccomp-profile ai_agent_t ai_agent_restricted)'
+    )),
+    once(sub_string(
+        Text,
+        _,
+        _,
+        _,
+        '(seccomp-rule ai_agent_restricted clone3 deny no_unprivileged_namespace_creation)'
+    )),
+    once(sub_string(
+        Text,
+        _,
+        _,
+        _,
         '(boolean-state httpd_can_network_connect true)'
     )),
     once(sub_string(
@@ -177,6 +191,13 @@ test(omegaclaw_prior_contains_path_and_severity_baselines) :-
         _,
         _,
         'ai_agent_database_egress_blocked'
+    )),
+    once(sub_string(
+        Text,
+        _,
+        _,
+        _,
+        'ai_agent_clone3_blocked_by_seccomp'
     )),
     once(sub_string(
         Text,

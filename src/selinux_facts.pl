@@ -9,6 +9,8 @@
     sensitive_capability/2,
     sensitive_process_permission/2,
     firewall_egress_rule/5,
+    seccomp_profile/2,
+    seccomp_rule/4,
     login_mapping/2,
     selinux_user_role/2,
     role_type/2,
@@ -80,6 +82,14 @@ sensitive_process_permission(noatsecure, unsafe_exec_environment).
 firewall_egress_rule(ai_agent_t, tcp, 80, allow, web_api_baseline).
 firewall_egress_rule(ai_agent_t, tcp, 5432, deny, database_egress_block).
 firewall_egress_rule(log_shipper_t, tcp, 443, allow, log_export_baseline).
+
+seccomp_profile(ai_agent_t, ai_agent_restricted).
+seccomp_profile(log_shipper_t, log_shipper_restricted).
+
+seccomp_rule(ai_agent_restricted, read, allow, baseline_io).
+seccomp_rule(ai_agent_restricted, clone3, deny, no_unprivileged_namespace_creation).
+seccomp_rule(ai_agent_restricted, bpf, deny, block_kernel_observability).
+seccomp_rule(log_shipper_restricted, write, allow, baseline_io).
 
 login_mapping(alice, user_u).
 login_mapping(agent_service, agent_u).
@@ -301,6 +311,32 @@ fact_source(
 fact_source(
     firewall_egress_rule(log_shipper_t, tcp, 443, allow, log_export_baseline),
     source{tool: local_runtime_profile, artifact: 'toy_firewall_rules', selector: 'log_shipper_t tcp/443 allow'}
+).
+
+fact_source(
+    seccomp_profile(ai_agent_t, ai_agent_restricted),
+    source{tool: local_runtime_profile, artifact: 'toy_seccomp_profiles', selector: 'ai_agent_t -> ai_agent_restricted'}
+).
+fact_source(
+    seccomp_profile(log_shipper_t, log_shipper_restricted),
+    source{tool: local_runtime_profile, artifact: 'toy_seccomp_profiles', selector: 'log_shipper_t -> log_shipper_restricted'}
+).
+
+fact_source(
+    seccomp_rule(ai_agent_restricted, read, allow, baseline_io),
+    source{tool: local_runtime_profile, artifact: 'toy_seccomp_rules', selector: 'ai_agent_restricted read allow'}
+).
+fact_source(
+    seccomp_rule(ai_agent_restricted, clone3, deny, no_unprivileged_namespace_creation),
+    source{tool: local_runtime_profile, artifact: 'toy_seccomp_rules', selector: 'ai_agent_restricted clone3 deny'}
+).
+fact_source(
+    seccomp_rule(ai_agent_restricted, bpf, deny, block_kernel_observability),
+    source{tool: local_runtime_profile, artifact: 'toy_seccomp_rules', selector: 'ai_agent_restricted bpf deny'}
+).
+fact_source(
+    seccomp_rule(log_shipper_restricted, write, allow, baseline_io),
+    source{tool: local_runtime_profile, artifact: 'toy_seccomp_rules', selector: 'log_shipper_restricted write allow'}
 ).
 
 fact_source(

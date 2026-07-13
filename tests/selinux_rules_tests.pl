@@ -54,6 +54,26 @@ test(ai_agent_network_exposure) :-
         web_api_baseline
     )).
 
+test(runtime_syscall_allowed_by_seccomp_profile) :-
+    once(runtime_syscall_allowed(ai_agent_t, read)).
+
+test(runtime_syscall_blocked_by_seccomp_profile, [fail]) :-
+    runtime_syscall_allowed(ai_agent_t, clone3).
+
+test(runtime_syscall_blocked_reason) :-
+    once(runtime_syscall_blocked(
+        ai_agent_t,
+        clone3,
+        no_unprivileged_namespace_creation
+    )).
+
+test(ai_agent_syscall_block) :-
+    once(ai_agent_syscall_block(
+        ai_agent_t,
+        bpf,
+        block_kernel_observability
+    )).
+
 test(negative_path_write_static_content, [fail]) :-
     can_access_path(httpd_t, '/var/www/html/index.html', file, write).
 
@@ -329,6 +349,26 @@ test(audit_finding_runtime_network_block_shape) :-
         }
     )).
 
+test(audit_finding_runtime_syscall_block_shape) :-
+    once(audit_finding(
+        runtime_syscall_block,
+        finding{
+            source: ai_agent_t,
+            syscall: clone3,
+            reason: no_unprivileged_namespace_creation
+        }
+    )).
+
+test(audit_finding_ai_agent_syscall_block_shape) :-
+    once(audit_finding(
+        ai_agent_syscall_block,
+        finding{
+            source: ai_agent_t,
+            syscall: bpf,
+            reason: block_kernel_observability
+        }
+    )).
+
 test(audit_finding_login_capability_shape) :-
     once(audit_finding(
         login_sensitive_capability,
@@ -450,6 +490,25 @@ test(audit_finding_runtime_network_block_evidence) :-
         port_context(5432, postgresql_port_t, tcp)-_,
         allow(ai_agent_t, postgresql_port_t, tcp_socket, name_connect)-_,
         firewall_egress_rule(ai_agent_t, tcp, 5432, deny, database_egress_block)-_
+    ]).
+
+test(audit_finding_runtime_syscall_block_evidence) :-
+    once(audit_finding_with_evidence(runtime_syscall_block, Finding)),
+    assertion(Finding.source == ai_agent_t),
+    assertion(Finding.syscall == clone3),
+    assertion(Finding.evidence = [
+        seccomp_profile(ai_agent_t, ai_agent_restricted)-_,
+        seccomp_rule(ai_agent_restricted, clone3, deny, no_unprivileged_namespace_creation)-_
+    ]).
+
+test(audit_finding_ai_agent_syscall_block_evidence) :-
+    once(audit_finding_with_evidence(ai_agent_syscall_block, Finding)),
+    assertion(Finding.source == ai_agent_t),
+    assertion(Finding.syscall == clone3),
+    assertion(Finding.evidence = [
+        has_attribute(ai_agent_t, ai_agent_domain)-_,
+        seccomp_profile(ai_agent_t, ai_agent_restricted)-_,
+        seccomp_rule(ai_agent_restricted, clone3, deny, no_unprivileged_namespace_creation)-_
     ]).
 
 test(audit_finding_login_capability_evidence) :-

@@ -45,6 +45,12 @@ metta_line(Line) :-
     firewall_egress_rule(Source, Protocol, Port, Action, Reason),
     sexpr_line(['firewall-egress-rule', Source, Protocol, Port, Action, Reason], Line).
 metta_line(Line) :-
+    seccomp_profile(Source, Profile),
+    sexpr_line(['seccomp-profile', Source, Profile], Line).
+metta_line(Line) :-
+    seccomp_rule(Profile, Syscall, Action, Reason),
+    sexpr_line(['seccomp-rule', Profile, Syscall, Action, Reason], Line).
+metta_line(Line) :-
     login_mapping(Login, SelinuxUser),
     sexpr_line(['login-mapping', Login, SelinuxUser], Line).
 metta_line(Line) :-
