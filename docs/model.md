@@ -12,6 +12,7 @@ SETools-style policy analysis output:
 - `sensitivity_level(Level, Rank)`
 - `mls_range(Entity, LowLevel, HighLevel, Categories)`
 - `type_bound(ChildType, ParentType)`
+- `sensitive_capability(Capability, Reason)`
 - `has_attribute(Type, Attribute)`
 - `type_transition(Source, Entrypoint, Target)`
 - `new_allow(PolicyVersion, Source, Target, Class, Permission)`
@@ -35,6 +36,8 @@ Derived predicates represent local audit questions:
 - `sensitivity_dominates/2`
 - `mls_read_allowed/2`
 - `mls_read_blocked/3`
+- `has_sensitive_capability/3`
+- `ai_agent_sensitive_capability/3`
 - `risky_web_shell_path/3`
 - `risky_executable_content_path/3`
 - `can_domain_transition/3`
@@ -68,6 +71,14 @@ level dominates the object high level and the subject categories include all
 object categories. `mls_read_blocked/3` exposes imported read allows that fail
 that range check. This is intentionally smaller than SELinux constraint
 expression evaluation; it is a reviewable bridge toward richer range algebra.
+
+SELinux capability-class grants are represented as ordinary `allow/4` facts
+such as `allow(ai_agent_t, self, capability, dac_override)`.
+`sensitive_capability/2` is a local audit rubric over capability permissions,
+not an imported SELinux primitive. `ai_agent_sensitive_capability/3` combines
+that rubric with `has_attribute(Source, ai_agent_domain)` so early AI-agent
+behavior checks can flag powerful Linux capability grants without claiming to
+model DAC outcomes or kernel capability semantics.
 
 `fixtures/omegaclaw_knowledge_prior.md` is generated from the MeTTa export and
 adds a small set of OmegaClaw `metta` commands for the first import/read
@@ -109,6 +120,6 @@ It does not yet model:
 - full SELinux constraint expressions and write-side MLS/MCS range algebra
 - role/user mappings
 - file-context path matching
-- Linux DAC, capabilities, seccomp, cgroups, namespaces, or firewall policy
+- Linux DAC outcomes, seccomp, cgroups, namespaces, or firewall policy
 
 Those should be added in small commits with tests.

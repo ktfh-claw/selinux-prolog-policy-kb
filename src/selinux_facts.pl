@@ -6,6 +6,7 @@
     sensitivity_level/2,
     mls_range/4,
     type_bound/2,
+    sensitive_capability/2,
     has_attribute/2,
     type_transition/3,
     new_allow/5,
@@ -28,6 +29,9 @@ allow(auditor_limited_t, secret_doc_t, file, read).
 allow(sandbox_web_t, httpd_sys_content_t, file, read).
 allow(sandbox_web_parent_t, httpd_sys_content_t, file, read).
 allow(sandbox_web_t, httpd_log_t, file, append).
+allow(ai_agent_t, self, capability, sys_admin).
+allow(ai_agent_t, self, capability, dac_override).
+allow(log_shipper_t, self, capability, audit_write).
 
 boolean_state(httpd_can_network_connect, true).
 boolean_state(httpd_enable_homedirs, false).
@@ -47,7 +51,11 @@ mls_range(secret_doc_t, s1, s1, [c1]).
 
 type_bound(sandbox_web_t, sandbox_web_parent_t).
 
+sensitive_capability(sys_admin, kernel_administration).
+sensitive_capability(dac_override, dac_bypass).
+
 has_attribute(httpd_t, webserver_domain).
+has_attribute(ai_agent_t, ai_agent_domain).
 has_attribute(httpd_sys_script_exec_t, executable_content).
 has_attribute(shadow_t, credential_store).
 
@@ -116,6 +124,18 @@ fact_source(
     allow(sandbox_web_t, httpd_log_t, file, append),
     source{tool: setools, artifact: 'toy_policy.allow', selector: 'allow sandbox_web_t httpd_log_t:file append'}
 ).
+fact_source(
+    allow(ai_agent_t, self, capability, sys_admin),
+    source{tool: setools, artifact: 'toy_policy.allow', selector: 'allow ai_agent_t self:capability sys_admin'}
+).
+fact_source(
+    allow(ai_agent_t, self, capability, dac_override),
+    source{tool: setools, artifact: 'toy_policy.allow', selector: 'allow ai_agent_t self:capability dac_override'}
+).
+fact_source(
+    allow(log_shipper_t, self, capability, audit_write),
+    source{tool: setools, artifact: 'toy_policy.allow', selector: 'allow log_shipper_t self:capability audit_write'}
+).
 
 fact_source(
     boolean_state(httpd_can_network_connect, true),
@@ -172,8 +192,21 @@ fact_source(
 ).
 
 fact_source(
+    sensitive_capability(sys_admin, kernel_administration),
+    source{tool: local_rubric, artifact: 'capability_severity', selector: 'sys_admin'}
+).
+fact_source(
+    sensitive_capability(dac_override, dac_bypass),
+    source{tool: local_rubric, artifact: 'capability_severity', selector: 'dac_override'}
+).
+
+fact_source(
     has_attribute(httpd_t, webserver_domain),
     source{tool: setools, artifact: 'toy_policy.attrs', selector: 'typeattribute httpd_t webserver_domain'}
+).
+fact_source(
+    has_attribute(ai_agent_t, ai_agent_domain),
+    source{tool: setools, artifact: 'toy_policy.attrs', selector: 'typeattribute ai_agent_t ai_agent_domain'}
 ).
 fact_source(
     has_attribute(httpd_sys_script_exec_t, executable_content),

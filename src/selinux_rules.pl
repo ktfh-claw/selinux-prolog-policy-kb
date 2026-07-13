@@ -10,6 +10,8 @@
     sensitivity_dominates/2,
     mls_read_allowed/2,
     mls_read_blocked/3,
+    has_sensitive_capability/3,
+    ai_agent_sensitive_capability/3,
     risky_web_shell_path/3,
     risky_executable_content_path/3,
     can_domain_transition/3,
@@ -96,6 +98,14 @@ mls_read_blocked(Source, Target, insufficient_mls_range) :-
 
 categories_include(SourceCategories, TargetCategories) :-
     forall(member(Category, TargetCategories), member(Category, SourceCategories)).
+
+has_sensitive_capability(Source, Capability, Reason) :-
+    effective_allow(Source, self, capability, Capability),
+    sensitive_capability(Capability, Reason).
+
+ai_agent_sensitive_capability(Source, Capability, Reason) :-
+    has_attribute(Source, ai_agent_domain),
+    has_sensitive_capability(Source, Capability, Reason).
 
 risky_web_shell_path(Source, Target, write_executable_content) :-
     effective_allow(Source, Target, file, write),
@@ -189,6 +199,13 @@ audit_finding(mls_blocked_read, finding{
     reason: Reason
 }) :-
     mls_read_blocked(Source, Target, Reason).
+
+audit_finding(ai_agent_sensitive_capability, finding{
+    source: Source,
+    capability: Capability,
+    reason: Reason
+}) :-
+    ai_agent_sensitive_capability(Source, Capability, Reason).
 
 audit_finding_with_evidence(Kind, FindingWithEvidence) :-
     audit_finding(Kind, Finding),
@@ -284,3 +301,16 @@ audit_evidence(mls_blocked_read, Finding, Evidence) :-
         mls_range(Target, TargetLow, TargetHigh, TargetCategories),
         TargetRangeSource
     ).
+
+audit_evidence(ai_agent_sensitive_capability, Finding, Evidence) :-
+    Source = Finding.source,
+    Capability = Finding.capability,
+    Reason = Finding.reason,
+    Evidence = [
+        allow(Source, self, capability, Capability)-AllowSource,
+        has_attribute(Source, ai_agent_domain)-AgentAttributeSource,
+        sensitive_capability(Capability, Reason)-CapabilitySource
+    ],
+    fact_source(allow(Source, self, capability, Capability), AllowSource),
+    fact_source(has_attribute(Source, ai_agent_domain), AgentAttributeSource),
+    fact_source(sensitive_capability(Capability, Reason), CapabilitySource).

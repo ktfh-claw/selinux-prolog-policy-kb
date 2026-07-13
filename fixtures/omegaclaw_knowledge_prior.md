@@ -7,6 +7,8 @@ The source facts are toy SETools/sepolicy_analysis-shaped facts, not a real host
 
 Use these as structured facts for OmegaClaw MeTTa/NAL reasoning experiments.
 
+- `(allow ai_agent_t self capability dac_override)`
+- `(allow ai_agent_t self capability sys_admin)`
 - `(allow auditor_limited_t secret_doc_t file read)`
 - `(allow auditor_t secret_doc_t file read)`
 - `(allow httpd_t httpd_log_t file append)`
@@ -15,10 +17,13 @@ Use these as structured facts for OmegaClaw MeTTa/NAL reasoning experiments.
 - `(allow httpd_t httpd_sys_script_exec_t file write)`
 - `(allow init_t daemon_exec_t file entrypoint)`
 - `(allow init_t daemon_t process transition)`
+- `(allow log_shipper_t self capability audit_write)`
 - `(allow sandbox_web_parent_t httpd_sys_content_t file read)`
 - `(allow sandbox_web_t httpd_log_t file append)`
 - `(allow sandbox_web_t httpd_sys_content_t file read)`
 - `(allow user_t secret_doc_t file read)`
+- `(audit-finding ai_agent_sensitive_capability (capability dac_override) (reason dac_bypass) (source ai_agent_t))`
+- `(audit-finding ai_agent_sensitive_capability (capability sys_admin) (reason kernel_administration) (source ai_agent_t))`
 - `(audit-finding constraint_blocked_allow (class file) (permission read) (reason mls_range_mismatch) (source user_t) (target secret_doc_t))`
 - `(audit-finding high_risk_policy_regression (class file) (permission read) (policy_version policy_v2) (source httpd_t) (target shadow_t))`
 - `(audit-finding mls_blocked_read (reason insufficient_mls_range) (source auditor_limited_t) (target secret_doc_t))`
@@ -38,6 +43,7 @@ Use these as structured facts for OmegaClaw MeTTa/NAL reasoning experiments.
 - `(file-context "/var/log/httpd/access.log" httpd_log_t file)`
 - `(file-context "/var/www/cgi-bin/admin.cgi" httpd_sys_script_exec_t file)`
 - `(file-context "/var/www/html/index.html" httpd_sys_content_t file)`
+- `(has-attribute ai_agent_t ai_agent_domain)`
 - `(has-attribute httpd_sys_script_exec_t executable_content)`
 - `(has-attribute httpd_t webserver_domain)`
 - `(has-attribute shadow_t credential_store)`
@@ -53,6 +59,8 @@ Use these as structured facts for OmegaClaw MeTTa/NAL reasoning experiments.
 - `(policy-regression-severity policy_v2 httpd_t shadow_t file read critical)`
 - `(port-context 5432 postgresql_port_t tcp)`
 - `(port-context 80 http_port_t tcp)`
+- `(sensitive-capability dac_override dac_bypass)`
+- `(sensitive-capability sys_admin kernel_administration)`
 - `(sensitivity-level s0 0)`
 - `(sensitivity-level s1 1)`
 - `(type-bound sandbox_web_t sandbox_web_parent_t)`
@@ -72,6 +80,7 @@ metta (|- ((==> (new-allow policy_v2 httpd_t shadow_t file read) critical_policy
 metta (|- ((==> (constraint-denies user_t secret_doc_t file read mls_range_mismatch) blocked_secret_doc_read_for_user_t) (stv 1.0 0.95)) ((constraint-denies user_t secret_doc_t file read mls_range_mismatch) (stv 1.0 0.95)))
 metta (|- ((==> (mls-range user_t s0 s0 (c0)) mls_blocked_secret_doc_read_for_user_t) (stv 1.0 0.95)) ((mls-range user_t s0 s0 (c0)) (stv 1.0 0.95)))
 metta (|- ((==> (port-context 80 http_port_t tcp) can_name_connect_http_port_80) (stv 1.0 0.95)) ((port-context 80 http_port_t tcp) (stv 1.0 0.95)))
+metta (|- ((==> (allow ai_agent_t self capability dac_override) ai_agent_has_dac_override) (stv 1.0 0.95)) ((allow ai_agent_t self capability dac_override) (stv 1.0 0.95)))
 ```
 
 ## Expected Use
@@ -81,4 +90,4 @@ The useful result is not that the toy facts are realistic; it is whether OmegaCl
 
 ## Soundness Boundary
 
-This fixture models only simple boolean-gated conditionals, explicit constraint-denial facts, resolved file and port contexts, type bounds, and a narrow read-side MLS/MCS range check. It does not model nested conditional expressions, full SELinux constraint expressions, write-side MLS/MCS range algebra, roles, users, DAC, capabilities, seccomp, namespaces, cgroups, or firewall policy.
+This fixture models only simple boolean-gated conditionals, explicit constraint-denial facts, resolved file and port contexts, type bounds, capability-class grants, and a narrow read-side MLS/MCS range check. It does not model nested conditional expressions, full SELinux constraint expressions, write-side MLS/MCS range algebra, roles, users, DAC outcome checks, seccomp, namespaces, cgroups, or firewall policy.

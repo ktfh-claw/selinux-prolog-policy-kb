@@ -29,6 +29,20 @@ test(omegaclaw_prior_contains_path_and_severity_baselines) :-
         _,
         _,
         _,
+        '(allow ai_agent_t self capability dac_override)'
+    )),
+    once(sub_string(
+        Text,
+        _,
+        _,
+        _,
+        '(sensitive-capability dac_override dac_bypass)'
+    )),
+    once(sub_string(
+        Text,
+        _,
+        _,
+        _,
         '(boolean-state httpd_can_network_connect true)'
     )),
     once(sub_string(
@@ -107,6 +121,13 @@ test(omegaclaw_prior_contains_path_and_severity_baselines) :-
         _,
         _,
         'mls_blocked_secret_doc_read_for_user_t'
+    )),
+    once(sub_string(
+        Text,
+        _,
+        _,
+        _,
+        'ai_agent_has_dac_override'
     )),
     once(sub_string(
         Text,

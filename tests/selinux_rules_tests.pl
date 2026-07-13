@@ -88,6 +88,22 @@ test(mls_read_blocked_by_missing_category) :-
         insufficient_mls_range
     )).
 
+test(capability_allow_is_effective) :-
+    once(can_access(ai_agent_t, self, capability, sys_admin)).
+
+test(sensitive_capability_grant) :-
+    once(has_sensitive_capability(ai_agent_t, sys_admin, kernel_administration)).
+
+test(ai_agent_sensitive_capability_grant) :-
+    once(ai_agent_sensitive_capability(
+        ai_agent_t,
+        dac_override,
+        dac_bypass
+    )).
+
+test(non_sensitive_capability_is_not_flagged, [fail]) :-
+    has_sensitive_capability(log_shipper_t, audit_write, _Reason).
+
 test(risky_web_shell_path) :-
     once(risky_web_shell_path(
         httpd_t,
@@ -185,6 +201,16 @@ test(audit_finding_mls_shape) :-
     assertion(Finding.target == secret_doc_t),
     assertion(Finding.reason == insufficient_mls_range).
 
+test(audit_finding_ai_agent_capability_shape) :-
+    once(audit_finding(
+        ai_agent_sensitive_capability,
+        finding{
+            source: ai_agent_t,
+            capability: dac_override,
+            reason: dac_bypass
+        }
+    )).
+
 test(audit_finding_web_shell_evidence) :-
     once(audit_finding_with_evidence(risky_web_shell_path, Finding)),
     assertion(Finding.source == httpd_t),
@@ -236,6 +262,18 @@ test(audit_finding_mls_evidence) :-
         allow(user_t, secret_doc_t, file, read)-_,
         mls_range(user_t, s0, s0, [c0])-_,
         mls_range(secret_doc_t, s1, s1, [c1])-_
+    ]).
+
+test(audit_finding_ai_agent_capability_evidence) :-
+    once((
+        audit_finding_with_evidence(ai_agent_sensitive_capability, Finding),
+        Finding.capability == dac_override
+    )),
+    assertion(Finding.capability == dac_override),
+    assertion(Finding.evidence = [
+        allow(ai_agent_t, self, capability, dac_override)-_,
+        has_attribute(ai_agent_t, ai_agent_domain)-_,
+        sensitive_capability(dac_override, dac_bypass)-_
     ]).
 
 :- end_tests(selinux_rules).

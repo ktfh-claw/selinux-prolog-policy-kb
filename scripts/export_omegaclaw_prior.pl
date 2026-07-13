@@ -65,6 +65,7 @@ baseline_query_lines([
     'metta (|- ((==> (constraint-denies user_t secret_doc_t file read mls_range_mismatch) blocked_secret_doc_read_for_user_t) (stv 1.0 0.95)) ((constraint-denies user_t secret_doc_t file read mls_range_mismatch) (stv 1.0 0.95)))',
     'metta (|- ((==> (mls-range user_t s0 s0 (c0)) mls_blocked_secret_doc_read_for_user_t) (stv 1.0 0.95)) ((mls-range user_t s0 s0 (c0)) (stv 1.0 0.95)))',
     'metta (|- ((==> (port-context 80 http_port_t tcp) can_name_connect_http_port_80) (stv 1.0 0.95)) ((port-context 80 http_port_t tcp) (stv 1.0 0.95)))',
+    'metta (|- ((==> (allow ai_agent_t self capability dac_override) ai_agent_has_dac_override) (stv 1.0 0.95)) ((allow ai_agent_t self capability dac_override) (stv 1.0 0.95)))',
     '```'
 ]).
 
@@ -77,5 +78,5 @@ boundary_lines([
     '',
     '## Soundness Boundary',
     '',
-    'This fixture models only simple boolean-gated conditionals, explicit constraint-denial facts, resolved file and port contexts, type bounds, and a narrow read-side MLS/MCS range check. It does not model nested conditional expressions, full SELinux constraint expressions, write-side MLS/MCS range algebra, roles, users, DAC, capabilities, seccomp, namespaces, cgroups, or firewall policy.'
+    'This fixture models only simple boolean-gated conditionals, explicit constraint-denial facts, resolved file and port contexts, type bounds, capability-class grants, and a narrow read-side MLS/MCS range check. It does not model nested conditional expressions, full SELinux constraint expressions, write-side MLS/MCS range algebra, roles, users, DAC outcome checks, seccomp, namespaces, cgroups, or firewall policy.'
 ]).

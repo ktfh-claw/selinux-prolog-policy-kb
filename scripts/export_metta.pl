@@ -36,6 +36,9 @@ metta_line(Line) :-
     type_bound(Child, Parent),
     sexpr_line(['type-bound', Child, Parent], Line).
 metta_line(Line) :-
+    sensitive_capability(Capability, Reason),
+    sexpr_line(['sensitive-capability', Capability, Reason], Line).
+metta_line(Line) :-
     has_attribute(Type, Attribute),
     sexpr_line(['has-attribute', Type, Attribute], Line).
 metta_line(Line) :-
