@@ -73,11 +73,11 @@ access_denied_by_type_bound(
     Class,
     Permission,
     Parent,
-    parent_missing_allow
+    parent_missing_effective_allow
 ) :-
     type_bound(Source, Parent),
     effective_allow_candidate(Source, Target, Class, Permission),
-    \+ effective_allow_candidate(Parent, Target, Class, Permission).
+    \+ effective_allow(Parent, Target, Class, Permission).
 
 sensitivity_dominates(SourceLevel, TargetLevel) :-
     sensitivity_level(SourceLevel, SourceRank),

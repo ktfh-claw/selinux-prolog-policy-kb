@@ -29,6 +29,8 @@ allow(auditor_limited_t, secret_doc_t, file, read).
 allow(sandbox_web_t, httpd_sys_content_t, file, read).
 allow(sandbox_web_parent_t, httpd_sys_content_t, file, read).
 allow(sandbox_web_t, httpd_log_t, file, append).
+allow(sandbox_secret_reader_t, secret_doc_t, file, read).
+allow(sandbox_secret_parent_t, secret_doc_t, file, read).
 allow(ai_agent_t, self, capability, sys_admin).
 allow(ai_agent_t, self, capability, dac_override).
 allow(log_shipper_t, self, capability, audit_write).
@@ -40,6 +42,13 @@ conditional_allow(httpd_can_network_connect, httpd_t, http_port_t, tcp_socket, n
 conditional_allow(httpd_enable_homedirs, httpd_t, user_home_t, file, read).
 
 constraint_denies(user_t, secret_doc_t, file, read, mls_range_mismatch).
+constraint_denies(
+    sandbox_secret_parent_t,
+    secret_doc_t,
+    file,
+    read,
+    parent_mls_range_mismatch
+).
 
 sensitivity_level(s0, 0).
 sensitivity_level(s1, 1).
@@ -50,6 +59,7 @@ mls_range(auditor_limited_t, s0, s1, [c0]).
 mls_range(secret_doc_t, s1, s1, [c1]).
 
 type_bound(sandbox_web_t, sandbox_web_parent_t).
+type_bound(sandbox_secret_reader_t, sandbox_secret_parent_t).
 
 sensitive_capability(sys_admin, kernel_administration).
 sensitive_capability(dac_override, dac_bypass).
@@ -125,6 +135,14 @@ fact_source(
     source{tool: setools, artifact: 'toy_policy.allow', selector: 'allow sandbox_web_t httpd_log_t:file append'}
 ).
 fact_source(
+    allow(sandbox_secret_reader_t, secret_doc_t, file, read),
+    source{tool: setools, artifact: 'toy_policy.allow', selector: 'allow sandbox_secret_reader_t secret_doc_t:file read'}
+).
+fact_source(
+    allow(sandbox_secret_parent_t, secret_doc_t, file, read),
+    source{tool: setools, artifact: 'toy_policy.allow', selector: 'allow sandbox_secret_parent_t secret_doc_t:file read'}
+).
+fact_source(
     allow(ai_agent_t, self, capability, sys_admin),
     source{tool: setools, artifact: 'toy_policy.allow', selector: 'allow ai_agent_t self:capability sys_admin'}
 ).
@@ -159,6 +177,16 @@ fact_source(
     constraint_denies(user_t, secret_doc_t, file, read, mls_range_mismatch),
     source{tool: setools, artifact: 'toy_policy.constraints', selector: 'constrain file read (mls range mismatch)'}
 ).
+fact_source(
+    constraint_denies(
+        sandbox_secret_parent_t,
+        secret_doc_t,
+        file,
+        read,
+        parent_mls_range_mismatch
+    ),
+    source{tool: setools, artifact: 'toy_policy.constraints', selector: 'constrain parent bounded file read (mls range mismatch)'}
+).
 
 fact_source(
     sensitivity_level(s0, 0),
@@ -189,6 +217,10 @@ fact_source(
 fact_source(
     type_bound(sandbox_web_t, sandbox_web_parent_t),
     source{tool: setools, artifact: 'toy_policy.typebounds', selector: 'typebounds sandbox_web_parent_t sandbox_web_t'}
+).
+fact_source(
+    type_bound(sandbox_secret_reader_t, sandbox_secret_parent_t),
+    source{tool: setools, artifact: 'toy_policy.typebounds', selector: 'typebounds sandbox_secret_parent_t sandbox_secret_reader_t'}
 ).
 
 fact_source(

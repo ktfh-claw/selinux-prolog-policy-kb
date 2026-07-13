@@ -56,6 +56,9 @@ test(type_bound_allows_parent_permitted_access) :-
 test(type_bound_blocks_child_extra_access, [fail]) :-
     can_access(sandbox_web_t, httpd_log_t, file, append).
 
+test(type_bound_blocks_when_parent_candidate_is_constrained, [fail]) :-
+    can_access(sandbox_secret_reader_t, secret_doc_t, file, read).
+
 test(access_denied_by_type_bound) :-
     once(access_denied_by_type_bound(
         sandbox_web_t,
@@ -63,7 +66,17 @@ test(access_denied_by_type_bound) :-
         file,
         append,
         sandbox_web_parent_t,
-        parent_missing_allow
+        parent_missing_effective_allow
+    )).
+
+test(access_denied_by_type_bound_parent_constraint) :-
+    once(access_denied_by_type_bound(
+        sandbox_secret_reader_t,
+        secret_doc_t,
+        file,
+        read,
+        sandbox_secret_parent_t,
+        parent_missing_effective_allow
     )).
 
 test(sensitivity_dominates_same_level) :-
@@ -193,7 +206,7 @@ test(audit_finding_type_bound_shape) :-
     assertion(Finding.source == sandbox_web_t),
     assertion(Finding.parent == sandbox_web_parent_t),
     assertion(Finding.target == httpd_log_t),
-    assertion(Finding.reason == parent_missing_allow).
+    assertion(Finding.reason == parent_missing_effective_allow).
 
 test(audit_finding_mls_shape) :-
     once(audit_finding(mls_blocked_read, Finding)),
@@ -249,7 +262,7 @@ test(audit_finding_constraint_evidence) :-
 
 test(audit_finding_type_bound_evidence) :-
     once(audit_finding_with_evidence(type_bound_blocked_allow, Finding)),
-    assertion(Finding.reason == parent_missing_allow),
+    assertion(Finding.reason == parent_missing_effective_allow),
     assertion(Finding.evidence = [
         allow(sandbox_web_t, httpd_log_t, file, append)-_,
         type_bound(sandbox_web_t, sandbox_web_parent_t)-_

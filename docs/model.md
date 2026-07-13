@@ -56,9 +56,9 @@ access.
 
 `type_bound/2` represents an already-normalized SELinux typebounds relation.
 For the current read/write access layer, a child type's imported allow is not
-effective unless the bounded parent type has the same allow candidate. This
-models the common audit question without attempting to reproduce every kernel
-typebounds edge case.
+effective unless the bounded parent type has the same effective access after
+conditionals and explicit denials are applied. This models the common audit
+question without attempting to reproduce every kernel typebounds edge case.
 
 `constraint_denies/5` is an already-normalized imported fact, not a full
 implementation of SELinux constraint expression evaluation. This keeps the
