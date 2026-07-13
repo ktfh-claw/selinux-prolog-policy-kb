@@ -69,6 +69,7 @@ baseline_query_lines([
     'metta (|- ((==> (allow ai_agent_t self process dyntransition) ai_agent_has_dyntransition) (stv 1.0 0.95)) ((allow ai_agent_t self process dyntransition) (stv 1.0 0.95)))',
     'metta (|- ((==> (firewall-egress-rule ai_agent_t tcp 5432 deny database_egress_block) ai_agent_database_egress_blocked) (stv 1.0 0.95)) ((firewall-egress-rule ai_agent_t tcp 5432 deny database_egress_block) (stv 1.0 0.95)))',
     'metta (|- ((==> (seccomp-rule ai_agent_restricted clone3 deny no_unprivileged_namespace_creation) ai_agent_clone3_blocked_by_seccomp) (stv 1.0 0.95)) ((seccomp-rule ai_agent_restricted clone3 deny no_unprivileged_namespace_creation) (stv 1.0 0.95)))',
+    'metta (|- ((==> (cgroup-limit ai_agent_slice pids 64 count pids_max_64) ai_agent_pids_limited_by_cgroup) (stv 1.0 0.95)) ((cgroup-limit ai_agent_slice pids 64 count pids_max_64) (stv 1.0 0.95)))',
     'metta (|- ((==> (login-mapping agent_service agent_u) agent_service_maps_to_sensitive_agent_domain) (stv 1.0 0.95)) ((login-mapping agent_service agent_u) (stv 1.0 0.95)))',
     '```'
 ]).
@@ -82,5 +83,5 @@ boundary_lines([
     '',
     '## Soundness Boundary',
     '',
-    'This fixture models only simple boolean-gated conditionals, explicit constraint-denial facts, resolved file and port contexts, type bounds, login/user/role/type mappings, capability/process-class grants, coarse firewall egress rules, normalized seccomp syscall rules, and a narrow read-side MLS/MCS range check. It does not model nested conditional expressions, full SELinux constraint expressions, write-side MLS/MCS range algebra, role transitions, DAC outcome checks, namespaces, cgroups, or full firewall/seccomp policy.'
+    'This fixture models only simple boolean-gated conditionals, explicit constraint-denial facts, resolved file and port contexts, type bounds, login/user/role/type mappings, capability/process-class grants, coarse firewall egress rules, normalized seccomp syscall rules, normalized cgroup resource-limit summaries, and a narrow read-side MLS/MCS range check. It does not model nested conditional expressions, full SELinux constraint expressions, write-side MLS/MCS range algebra, role transitions, DAC outcome checks, namespaces, or full firewall/seccomp/cgroup policy.'
 ]).

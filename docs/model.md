@@ -17,6 +17,8 @@ SETools-style policy analysis output:
 - `firewall_egress_rule(Source, Protocol, Port, Action, Reason)`
 - `seccomp_profile(Source, Profile)`
 - `seccomp_rule(Profile, Syscall, Action, Reason)`
+- `cgroup_assignment(Source, Cgroup)`
+- `cgroup_limit(Cgroup, Resource, Value, Unit, Reason)`
 - `login_mapping(Login, SelinuxUser)`
 - `selinux_user_role(SelinuxUser, Role)`
 - `role_type(Role, Type)`
@@ -53,6 +55,8 @@ Derived predicates represent local audit questions:
 - `runtime_syscall_allowed/2`
 - `runtime_syscall_blocked/3`
 - `ai_agent_syscall_block/3`
+- `runtime_resource_limited/5`
+- `ai_agent_resource_limit/5`
 - `login_domain/2`
 - `login_can_access/4`
 - `login_sensitive_capability/4`
@@ -144,6 +148,14 @@ rules directly, and `ai_agent_syscall_block/3` scopes those blocks to domains
 tagged with `ai_agent_domain`. These facts are intentionally profile summaries,
 not raw BPF/seccomp filter evaluation.
 
+`cgroup_assignment/2` and `cgroup_limit/5` add a third normalized runtime policy
+layer for resource isolation. `runtime_resource_limited/5` joins a domain to its
+cgroup and then to resource caps such as `pids.max` and `memory.max`.
+`ai_agent_resource_limit/5` scopes those limits to domains tagged with
+`ai_agent_domain`. These facts are summaries of already-resolved cgroup policy,
+not a model of controller inheritance, delegation, pressure metrics, or systemd
+unit semantics.
+
 `fact_source/2` stores provenance for imported facts as structured metadata.
 `audit_finding_with_evidence/2` keeps the original finding shape and adds an
 `evidence` list whose entries pair each supporting fact with its source
@@ -168,6 +180,6 @@ It does not yet model:
 - full SELinux constraint expressions and write-side MLS/MCS range algebra
 - role transitions and role dominance
 - file-context path matching
-- Linux DAC outcomes, cgroups, namespaces, or full firewall/seccomp policy
+- Linux DAC outcomes, namespaces, or full firewall/seccomp/cgroup policy
 
 Those should be added in small commits with tests.

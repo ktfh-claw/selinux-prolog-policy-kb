@@ -30,6 +30,8 @@ Use these as structured facts for OmegaClaw MeTTa/NAL reasoning experiments.
 - `(allow sandbox_web_t httpd_sys_content_t file read)`
 - `(allow user_t secret_doc_t file read)`
 - `(audit-finding ai_agent_network_exposure (port 80) (protocol tcp) (reason web_api_baseline) (source ai_agent_t))`
+- `(audit-finding ai_agent_resource_limit (reason memory_max_512m) (resource memory) (source ai_agent_t) (unit mebibytes) (value 512))`
+- `(audit-finding ai_agent_resource_limit (reason pids_max_64) (resource pids) (source ai_agent_t) (unit count) (value 64))`
 - `(audit-finding ai_agent_sensitive_capability (capability dac_override) (reason dac_bypass) (source ai_agent_t))`
 - `(audit-finding ai_agent_sensitive_capability (capability sys_admin) (reason kernel_administration) (source ai_agent_t))`
 - `(audit-finding ai_agent_sensitive_process_permission (permission dyntransition) (reason arbitrary_domain_transition) (source ai_agent_t))`
@@ -48,12 +50,20 @@ Use these as structured facts for OmegaClaw MeTTa/NAL reasoning experiments.
 - `(audit-finding risky_executable_content_path (path "/var/www/cgi-bin/admin.cgi") (reason write_executable_content) (source httpd_t))`
 - `(audit-finding risky_web_shell_path (reason write_executable_content) (source httpd_t) (target httpd_sys_script_exec_t))`
 - `(audit-finding runtime_network_block (port 5432) (protocol tcp) (reason database_egress_block) (source ai_agent_t))`
+- `(audit-finding runtime_resource_limit (reason log_memory_cap) (resource memory) (source log_shipper_t) (unit mebibytes) (value 256))`
+- `(audit-finding runtime_resource_limit (reason memory_max_512m) (resource memory) (source ai_agent_t) (unit mebibytes) (value 512))`
+- `(audit-finding runtime_resource_limit (reason pids_max_64) (resource pids) (source ai_agent_t) (unit count) (value 64))`
 - `(audit-finding runtime_syscall_block (reason block_kernel_observability) (source ai_agent_t) (syscall bpf))`
 - `(audit-finding runtime_syscall_block (reason no_unprivileged_namespace_creation) (source ai_agent_t) (syscall clone3))`
 - `(audit-finding type_bound_blocked_allow (class file) (parent sandbox_secret_parent_t) (permission read) (reason parent_missing_effective_allow) (source sandbox_secret_reader_t) (target secret_doc_t))`
 - `(audit-finding type_bound_blocked_allow (class file) (parent sandbox_web_parent_t) (permission append) (reason parent_missing_effective_allow) (source sandbox_web_t) (target httpd_log_t))`
 - `(boolean-state httpd_can_network_connect true)`
 - `(boolean-state httpd_enable_homedirs false)`
+- `(cgroup-assignment ai_agent_t ai_agent_slice)`
+- `(cgroup-assignment log_shipper_t log_shipper_slice)`
+- `(cgroup-limit ai_agent_slice memory 512 mebibytes memory_max_512m)`
+- `(cgroup-limit ai_agent_slice pids 64 count pids_max_64)`
+- `(cgroup-limit log_shipper_slice memory 256 mebibytes log_memory_cap)`
 - `(conditional-allow httpd_can_network_connect httpd_t http_port_t tcp_socket name_connect)`
 - `(conditional-allow httpd_enable_homedirs httpd_t user_home_t file read)`
 - `(constraint-denies sandbox_secret_parent_t secret_doc_t file read parent_mls_range_mismatch)`
@@ -127,6 +137,7 @@ metta (|- ((==> (allow ai_agent_t self capability dac_override) ai_agent_has_dac
 metta (|- ((==> (allow ai_agent_t self process dyntransition) ai_agent_has_dyntransition) (stv 1.0 0.95)) ((allow ai_agent_t self process dyntransition) (stv 1.0 0.95)))
 metta (|- ((==> (firewall-egress-rule ai_agent_t tcp 5432 deny database_egress_block) ai_agent_database_egress_blocked) (stv 1.0 0.95)) ((firewall-egress-rule ai_agent_t tcp 5432 deny database_egress_block) (stv 1.0 0.95)))
 metta (|- ((==> (seccomp-rule ai_agent_restricted clone3 deny no_unprivileged_namespace_creation) ai_agent_clone3_blocked_by_seccomp) (stv 1.0 0.95)) ((seccomp-rule ai_agent_restricted clone3 deny no_unprivileged_namespace_creation) (stv 1.0 0.95)))
+metta (|- ((==> (cgroup-limit ai_agent_slice pids 64 count pids_max_64) ai_agent_pids_limited_by_cgroup) (stv 1.0 0.95)) ((cgroup-limit ai_agent_slice pids 64 count pids_max_64) (stv 1.0 0.95)))
 metta (|- ((==> (login-mapping agent_service agent_u) agent_service_maps_to_sensitive_agent_domain) (stv 1.0 0.95)) ((login-mapping agent_service agent_u) (stv 1.0 0.95)))
 ```
 
@@ -137,4 +148,4 @@ The useful result is not that the toy facts are realistic; it is whether OmegaCl
 
 ## Soundness Boundary
 
-This fixture models only simple boolean-gated conditionals, explicit constraint-denial facts, resolved file and port contexts, type bounds, login/user/role/type mappings, capability/process-class grants, coarse firewall egress rules, normalized seccomp syscall rules, and a narrow read-side MLS/MCS range check. It does not model nested conditional expressions, full SELinux constraint expressions, write-side MLS/MCS range algebra, role transitions, DAC outcome checks, namespaces, cgroups, or full firewall/seccomp policy.
+This fixture models only simple boolean-gated conditionals, explicit constraint-denial facts, resolved file and port contexts, type bounds, login/user/role/type mappings, capability/process-class grants, coarse firewall egress rules, normalized seccomp syscall rules, normalized cgroup resource-limit summaries, and a narrow read-side MLS/MCS range check. It does not model nested conditional expressions, full SELinux constraint expressions, write-side MLS/MCS range algebra, role transitions, DAC outcome checks, namespaces, or full firewall/seccomp/cgroup policy.

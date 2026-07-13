@@ -26,6 +26,8 @@ The first model layer covers:
   `firewall_egress_rule(Source, Protocol, Port, Action, Reason)`
 - normalized seccomp facts: `seccomp_profile(Source, Profile)` and
   `seccomp_rule(Profile, Syscall, Action, Reason)`
+- normalized cgroup facts: `cgroup_assignment(Source, Cgroup)` and
+  `cgroup_limit(Cgroup, Resource, Value, Unit, Reason)`
 - login/user/role/type mapping facts: `login_mapping(Login, SelinuxUser)`,
   `selinux_user_role(SelinuxUser, Role)`, and `role_type(Role, Type)`
 - type attributes: `has_attribute(Type, Attribute)`
@@ -39,8 +41,9 @@ The first model layer covers:
   reachability, constraint-blocked allows, type-bound-blocked allows, MLS
   range-blocked reads, sensitive capability and process-permission grants for
   AI-agent domains and mapped logins, runtime network and syscall block checks,
-  high-risk policy regressions, and severity classification for policy diffs and
-  findings with structured evidence
+  runtime cgroup resource-limit checks, high-risk policy regressions, and
+  severity classification for policy diffs and findings with structured
+  evidence
 
 ## Layout
 

@@ -51,6 +51,12 @@ metta_line(Line) :-
     seccomp_rule(Profile, Syscall, Action, Reason),
     sexpr_line(['seccomp-rule', Profile, Syscall, Action, Reason], Line).
 metta_line(Line) :-
+    cgroup_assignment(Source, Cgroup),
+    sexpr_line(['cgroup-assignment', Source, Cgroup], Line).
+metta_line(Line) :-
+    cgroup_limit(Cgroup, Resource, Value, Unit, Reason),
+    sexpr_line(['cgroup-limit', Cgroup, Resource, Value, Unit, Reason], Line).
+metta_line(Line) :-
     login_mapping(Login, SelinuxUser),
     sexpr_line(['login-mapping', Login, SelinuxUser], Line).
 metta_line(Line) :-

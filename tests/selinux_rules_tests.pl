@@ -74,6 +74,33 @@ test(ai_agent_syscall_block) :-
         block_kernel_observability
     )).
 
+test(runtime_resource_limit_from_cgroup) :-
+    once(runtime_resource_limited(
+        ai_agent_t,
+        pids,
+        64,
+        count,
+        pids_max_64
+    )).
+
+test(ai_agent_resource_limit_from_cgroup) :-
+    once(ai_agent_resource_limit(
+        ai_agent_t,
+        memory,
+        512,
+        mebibytes,
+        memory_max_512m
+    )).
+
+test(non_ai_agent_resource_limit_is_not_agent_scoped, [fail]) :-
+    ai_agent_resource_limit(
+        log_shipper_t,
+        memory,
+        256,
+        mebibytes,
+        log_memory_cap
+    ).
+
 test(negative_path_write_static_content, [fail]) :-
     can_access_path(httpd_t, '/var/www/html/index.html', file, write).
 
@@ -369,6 +396,30 @@ test(audit_finding_ai_agent_syscall_block_shape) :-
         }
     )).
 
+test(audit_finding_runtime_resource_limit_shape) :-
+    once(audit_finding(
+        runtime_resource_limit,
+        finding{
+            source: ai_agent_t,
+            resource: pids,
+            value: 64,
+            unit: count,
+            reason: pids_max_64
+        }
+    )).
+
+test(audit_finding_ai_agent_resource_limit_shape) :-
+    once(audit_finding(
+        ai_agent_resource_limit,
+        finding{
+            source: ai_agent_t,
+            resource: memory,
+            value: 512,
+            unit: mebibytes,
+            reason: memory_max_512m
+        }
+    )).
+
 test(audit_finding_login_capability_shape) :-
     once(audit_finding(
         login_sensitive_capability,
@@ -509,6 +560,29 @@ test(audit_finding_ai_agent_syscall_block_evidence) :-
         has_attribute(ai_agent_t, ai_agent_domain)-_,
         seccomp_profile(ai_agent_t, ai_agent_restricted)-_,
         seccomp_rule(ai_agent_restricted, clone3, deny, no_unprivileged_namespace_creation)-_
+    ]).
+
+test(audit_finding_runtime_resource_limit_evidence) :-
+    once((
+        audit_finding_with_evidence(runtime_resource_limit, Finding),
+        Finding.resource == pids
+    )),
+    assertion(Finding.source == ai_agent_t),
+    assertion(Finding.evidence = [
+        cgroup_assignment(ai_agent_t, ai_agent_slice)-_,
+        cgroup_limit(ai_agent_slice, pids, 64, count, pids_max_64)-_
+    ]).
+
+test(audit_finding_ai_agent_resource_limit_evidence) :-
+    once((
+        audit_finding_with_evidence(ai_agent_resource_limit, Finding),
+        Finding.resource == memory
+    )),
+    assertion(Finding.source == ai_agent_t),
+    assertion(Finding.evidence = [
+        has_attribute(ai_agent_t, ai_agent_domain)-_,
+        cgroup_assignment(ai_agent_t, ai_agent_slice)-_,
+        cgroup_limit(ai_agent_slice, memory, 512, mebibytes, memory_max_512m)-_
     ]).
 
 test(audit_finding_login_capability_evidence) :-

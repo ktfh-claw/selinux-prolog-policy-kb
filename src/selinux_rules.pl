@@ -10,6 +10,8 @@
     runtime_syscall_allowed/2,
     runtime_syscall_blocked/3,
     ai_agent_syscall_block/3,
+    runtime_resource_limited/5,
+    ai_agent_resource_limit/5,
     access_denied_by_constraint/5,
     access_denied_by_type_bound/6,
     sensitivity_dominates/2,
@@ -93,6 +95,14 @@ runtime_syscall_blocked(Source, Syscall, Reason) :-
 ai_agent_syscall_block(Source, Syscall, Reason) :-
     has_attribute(Source, ai_agent_domain),
     runtime_syscall_blocked(Source, Syscall, Reason).
+
+runtime_resource_limited(Source, Resource, Value, Unit, Reason) :-
+    cgroup_assignment(Source, Cgroup),
+    cgroup_limit(Cgroup, Resource, Value, Unit, Reason).
+
+ai_agent_resource_limit(Source, Resource, Value, Unit, Reason) :-
+    has_attribute(Source, ai_agent_domain),
+    runtime_resource_limited(Source, Resource, Value, Unit, Reason).
 
 socket_class_for_protocol(tcp, tcp_socket).
 socket_class_for_protocol(udp, udp_socket).
@@ -308,6 +318,24 @@ audit_finding(ai_agent_syscall_block, finding{
 }) :-
     ai_agent_syscall_block(Source, Syscall, Reason).
 
+audit_finding(runtime_resource_limit, finding{
+    source: Source,
+    resource: Resource,
+    value: Value,
+    unit: Unit,
+    reason: Reason
+}) :-
+    runtime_resource_limited(Source, Resource, Value, Unit, Reason).
+
+audit_finding(ai_agent_resource_limit, finding{
+    source: Source,
+    resource: Resource,
+    value: Value,
+    unit: Unit,
+    reason: Reason
+}) :-
+    ai_agent_resource_limit(Source, Resource, Value, Unit, Reason).
+
 audit_finding(login_sensitive_capability, finding{
     login: Login,
     domain: Domain,
@@ -510,6 +538,36 @@ audit_evidence(ai_agent_syscall_block, Finding, Evidence) :-
     fact_source(has_attribute(Source, ai_agent_domain), AgentAttributeSource),
     fact_source(seccomp_profile(Source, Profile), ProfileSource),
     fact_source(seccomp_rule(Profile, Syscall, deny, Reason), RuleSource).
+
+audit_evidence(runtime_resource_limit, Finding, Evidence) :-
+    Source = Finding.source,
+    Resource = Finding.resource,
+    Value = Finding.value,
+    Unit = Finding.unit,
+    Reason = Finding.reason,
+    cgroup_assignment(Source, Cgroup),
+    Evidence = [
+        cgroup_assignment(Source, Cgroup)-AssignmentSource,
+        cgroup_limit(Cgroup, Resource, Value, Unit, Reason)-LimitSource
+    ],
+    fact_source(cgroup_assignment(Source, Cgroup), AssignmentSource),
+    fact_source(cgroup_limit(Cgroup, Resource, Value, Unit, Reason), LimitSource).
+
+audit_evidence(ai_agent_resource_limit, Finding, Evidence) :-
+    Source = Finding.source,
+    Resource = Finding.resource,
+    Value = Finding.value,
+    Unit = Finding.unit,
+    Reason = Finding.reason,
+    cgroup_assignment(Source, Cgroup),
+    Evidence = [
+        has_attribute(Source, ai_agent_domain)-AgentAttributeSource,
+        cgroup_assignment(Source, Cgroup)-AssignmentSource,
+        cgroup_limit(Cgroup, Resource, Value, Unit, Reason)-LimitSource
+    ],
+    fact_source(has_attribute(Source, ai_agent_domain), AgentAttributeSource),
+    fact_source(cgroup_assignment(Source, Cgroup), AssignmentSource),
+    fact_source(cgroup_limit(Cgroup, Resource, Value, Unit, Reason), LimitSource).
 
 audit_evidence(login_sensitive_capability, Finding, Evidence) :-
     Login = Finding.login,

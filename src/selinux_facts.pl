@@ -11,6 +11,8 @@
     firewall_egress_rule/5,
     seccomp_profile/2,
     seccomp_rule/4,
+    cgroup_assignment/2,
+    cgroup_limit/5,
     login_mapping/2,
     selinux_user_role/2,
     role_type/2,
@@ -90,6 +92,13 @@ seccomp_rule(ai_agent_restricted, read, allow, baseline_io).
 seccomp_rule(ai_agent_restricted, clone3, deny, no_unprivileged_namespace_creation).
 seccomp_rule(ai_agent_restricted, bpf, deny, block_kernel_observability).
 seccomp_rule(log_shipper_restricted, write, allow, baseline_io).
+
+cgroup_assignment(ai_agent_t, ai_agent_slice).
+cgroup_assignment(log_shipper_t, log_shipper_slice).
+
+cgroup_limit(ai_agent_slice, pids, 64, count, pids_max_64).
+cgroup_limit(ai_agent_slice, memory, 512, mebibytes, memory_max_512m).
+cgroup_limit(log_shipper_slice, memory, 256, mebibytes, log_memory_cap).
 
 login_mapping(alice, user_u).
 login_mapping(agent_service, agent_u).
@@ -337,6 +346,28 @@ fact_source(
 fact_source(
     seccomp_rule(log_shipper_restricted, write, allow, baseline_io),
     source{tool: local_runtime_profile, artifact: 'toy_seccomp_rules', selector: 'log_shipper_restricted write allow'}
+).
+
+fact_source(
+    cgroup_assignment(ai_agent_t, ai_agent_slice),
+    source{tool: local_runtime_profile, artifact: 'toy_cgroup_assignments', selector: 'ai_agent_t -> ai_agent_slice'}
+).
+fact_source(
+    cgroup_assignment(log_shipper_t, log_shipper_slice),
+    source{tool: local_runtime_profile, artifact: 'toy_cgroup_assignments', selector: 'log_shipper_t -> log_shipper_slice'}
+).
+
+fact_source(
+    cgroup_limit(ai_agent_slice, pids, 64, count, pids_max_64),
+    source{tool: local_runtime_profile, artifact: 'toy_cgroup_limits', selector: 'ai_agent_slice pids.max 64'}
+).
+fact_source(
+    cgroup_limit(ai_agent_slice, memory, 512, mebibytes, memory_max_512m),
+    source{tool: local_runtime_profile, artifact: 'toy_cgroup_limits', selector: 'ai_agent_slice memory.max 512M'}
+).
+fact_source(
+    cgroup_limit(log_shipper_slice, memory, 256, mebibytes, log_memory_cap),
+    source{tool: local_runtime_profile, artifact: 'toy_cgroup_limits', selector: 'log_shipper_slice memory.max 256M'}
 ).
 
 fact_source(
