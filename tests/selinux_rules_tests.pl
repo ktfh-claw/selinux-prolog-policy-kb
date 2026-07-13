@@ -53,6 +53,36 @@ test(negative_domain_transition_via_non_entrypoint_path, [fail]) :-
 test(high_risk_policy_regression) :-
     once(high_risk_policy_regression(policy_v2, httpd_t, shadow_t, file, read)).
 
+test(policy_regression_severity_critical) :-
+    once(policy_regression_severity(
+        policy_v2,
+        httpd_t,
+        shadow_t,
+        file,
+        read,
+        critical
+    )).
+
+test(policy_regression_severity_high) :-
+    once(policy_regression_severity(
+        policy_v2,
+        httpd_t,
+        httpd_sys_script_exec_t,
+        file,
+        write,
+        high
+    )).
+
+test(policy_regression_severity_low) :-
+    once(policy_regression_severity(
+        policy_v2,
+        httpd_t,
+        httpd_log_t,
+        file,
+        getattr,
+        low
+    )).
+
 test(audit_finding_web_shell_shape) :-
     audit_finding(risky_web_shell_path, Finding),
     assertion(Finding.source == httpd_t),

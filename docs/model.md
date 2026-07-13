@@ -27,6 +27,7 @@ Derived predicates represent local audit questions:
 - `can_domain_transition/3`
 - `can_domain_transition_via_path/3`
 - `high_risk_policy_regression/5`
+- `policy_regression_severity/6`
 - `audit_finding/2`
 - `audit_finding_with_evidence/2`
 
@@ -40,6 +41,13 @@ reach this model.
 `evidence` list whose entries pair each supporting fact with its source
 metadata. This is intended for downstream consumers that need explainable
 reasoning output without parsing Prolog proof traces.
+
+`policy_regression_severity/6` classifies imported `new_allow/5` policy diff
+facts with a small local rubric:
+
+- `critical` for new read, write, or append access to credential-store types
+- `high` for new writes from webserver domains to executable content
+- `low` for other new allows
 
 ## Soundness Boundary
 

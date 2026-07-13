@@ -8,6 +8,7 @@
     can_domain_transition/3,
     can_domain_transition_via_path/3,
     high_risk_policy_regression/5,
+    policy_regression_severity/6,
     audit_finding/2,
     audit_finding_with_evidence/2
 ]).
@@ -49,6 +50,20 @@ high_risk_policy_regression(PolicyVersion, Source, Target, Class, Permission) :-
     new_allow(PolicyVersion, Source, Target, Class, Permission),
     has_attribute(Target, credential_store),
     member(Permission, [read, write, append]).
+
+policy_regression_severity(PolicyVersion, Source, Target, Class, Permission, Severity) :-
+    new_allow(PolicyVersion, Source, Target, Class, Permission),
+    policy_regression_severity_for(Source, Target, Class, Permission, Severity).
+
+policy_regression_severity_for(_Source, Target, _Class, Permission, critical) :-
+    has_attribute(Target, credential_store),
+    member(Permission, [read, write, append]),
+    !.
+policy_regression_severity_for(Source, Target, file, write, high) :-
+    has_attribute(Source, webserver_domain),
+    has_attribute(Target, executable_content),
+    !.
+policy_regression_severity_for(_Source, _Target, _Class, _Permission, low).
 
 audit_finding(risky_web_shell_path, finding{
     source: Source,

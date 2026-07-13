@@ -19,7 +19,8 @@ The first model layer covers:
 - provenance facts: `fact_source(Fact, SourceMetadata)`
 - derived audit predicates for risky web-shell paths, path-resolved domain
   transition reachability, path-level access, high-risk policy regressions, and
-  findings with structured evidence
+  severity classification for policy diffs and findings with structured
+  evidence
 
 ## Layout
 

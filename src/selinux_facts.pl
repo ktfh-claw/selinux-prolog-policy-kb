@@ -23,6 +23,8 @@ has_attribute(shadow_t, credential_store).
 type_transition(init_t, daemon_exec_t, daemon_t).
 
 new_allow(policy_v2, httpd_t, shadow_t, file, read).
+new_allow(policy_v2, httpd_t, httpd_sys_script_exec_t, file, write).
+new_allow(policy_v2, httpd_t, httpd_log_t, file, getattr).
 
 file_context('/var/www/html/index.html', httpd_sys_content_t, file).
 file_context('/var/www/cgi-bin/admin.cgi', httpd_sys_script_exec_t, file).
@@ -76,6 +78,14 @@ fact_source(
 fact_source(
     new_allow(policy_v2, httpd_t, shadow_t, file, read),
     source{tool: sepolicy_analysis, artifact: 'toy_policy_diff.json', selector: 'policy_v2 new allow httpd_t shadow_t:file read'}
+).
+fact_source(
+    new_allow(policy_v2, httpd_t, httpd_sys_script_exec_t, file, write),
+    source{tool: sepolicy_analysis, artifact: 'toy_policy_diff.json', selector: 'policy_v2 new allow httpd_t httpd_sys_script_exec_t:file write'}
+).
+fact_source(
+    new_allow(policy_v2, httpd_t, httpd_log_t, file, getattr),
+    source{tool: sepolicy_analysis, artifact: 'toy_policy_diff.json', selector: 'policy_v2 new allow httpd_t httpd_log_t:file getattr'}
 ).
 
 fact_source(
