@@ -2,6 +2,7 @@
 
 :- use_module(library(readutil)).
 :- use_module('../scripts/export_metta').
+:- use_module('../scripts/export_omegaclaw_prior').
 
 test(export_matches_fixture) :-
     with_output_to(string(Actual), export_metta),
@@ -11,5 +12,38 @@ test(export_matches_fixture) :-
         []
     ),
     assertion(Actual == Expected).
+
+test(omegaclaw_prior_matches_fixture) :-
+    omegaclaw_prior_text(Actual),
+    read_file_to_string(
+        'fixtures/omegaclaw_knowledge_prior.md',
+        Expected,
+        []
+    ),
+    assertion(Actual == Expected).
+
+test(omegaclaw_prior_contains_path_and_severity_baselines) :-
+    omegaclaw_prior_text(Text),
+    once(sub_string(
+        Text,
+        _,
+        _,
+        _,
+        '(file-context "/var/www/cgi-bin/admin.cgi" httpd_sys_script_exec_t file)'
+    )),
+    once(sub_string(
+        Text,
+        _,
+        _,
+        _,
+        '(policy-regression-severity policy_v2 httpd_t shadow_t file read critical)'
+    )),
+    once(sub_string(
+        Text,
+        _,
+        _,
+        _,
+        'critical_policy_regression_policy_v2_httpd_shadow_read'
+    )).
 
 :- end_tests(metta_export).

@@ -27,7 +27,11 @@ The first model layer covers:
 - `src/selinux_facts.pl` - toy imported policy facts shaped like SETools output
 - `src/selinux_rules.pl` - reusable reasoning rules over imported facts
 - `scripts/export_metta.pl` - deterministic repo-local MeTTa-style export
+- `scripts/export_omegaclaw_prior.pl` - generated OmegaClaw knowledge-prior
+  fixture and baseline commands
 - `fixtures/selinux_policy.metta` - generated OmegaClaw/MeTTa-style fixture
+- `fixtures/omegaclaw_knowledge_prior.md` - generated import/read fixture for
+  OmegaClaw baseline experiments
 - `tests/selinux_rules_tests.pl` - executable Prolog tests
 - `docs/model.md` - modeling notes and soundness boundaries
 
@@ -42,6 +46,7 @@ swipl -q -g run_tests -t halt tests/metta_export_tests.pl
 
 ```bash
 swipl -q -s scripts/export_metta.pl -g export_metta:export_metta -t halt > fixtures/selinux_policy.metta
+swipl -q -s scripts/export_omegaclaw_prior.pl -g export_omegaclaw_prior:export_omegaclaw_prior -t halt > fixtures/omegaclaw_knowledge_prior.md
 ```
 
 ## Boundary

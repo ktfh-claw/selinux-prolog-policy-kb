@@ -31,6 +31,12 @@ Derived predicates represent local audit questions:
 - `audit_finding/2`
 - `audit_finding_with_evidence/2`
 
+`fixtures/omegaclaw_knowledge_prior.md` is generated from the MeTTa export and
+adds a small set of OmegaClaw `metta` commands for the first import/read
+experiment. It is intentionally a bridge artifact: the Prolog model remains the
+source of truth, while OmegaClaw receives a stable fact block and explicit
+baseline checks.
+
 `file_context/3` intentionally uses already-expanded path facts instead of
 implementing SELinux regex precedence. A real importer should normalize
 `semanage fcontext`, `matchpathcon`, or SETools-derived output before facts
