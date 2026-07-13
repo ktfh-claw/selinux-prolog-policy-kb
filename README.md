@@ -29,11 +29,15 @@ The first model layer covers:
 - `scripts/export_metta.pl` - deterministic repo-local MeTTa-style export
 - `scripts/export_omegaclaw_prior.pl` - generated OmegaClaw knowledge-prior
   fixture and baseline commands
+- `scripts/prepare_omegaclaw_experiment.sh` - repo-local import/read experiment
+  packet builder for OmegaClaw
 - `fixtures/selinux_policy.metta` - generated OmegaClaw/MeTTa-style fixture
 - `fixtures/omegaclaw_knowledge_prior.md` - generated import/read fixture for
   OmegaClaw baseline experiments
 - `tests/selinux_rules_tests.pl` - executable Prolog tests
 - `docs/model.md` - modeling notes and soundness boundaries
+- `docs/omegaclaw_import_read_experiment.md` - runbook for preparing and
+  recording an OmegaClaw import/read experiment without editing OmegaClaw-Core
 
 ## Run Tests
 
@@ -48,6 +52,15 @@ swipl -q -g run_tests -t halt tests/metta_export_tests.pl
 swipl -q -s scripts/export_metta.pl -g export_metta:export_metta -t halt > fixtures/selinux_policy.metta
 swipl -q -s scripts/export_omegaclaw_prior.pl -g export_omegaclaw_prior:export_omegaclaw_prior -t halt > fixtures/omegaclaw_knowledge_prior.md
 ```
+
+## Prepare OmegaClaw Import/Read Packet
+
+```bash
+sh scripts/prepare_omegaclaw_experiment.sh
+```
+
+This writes `.tmp/omegaclaw-import-read/knowledge-prior.md` and `report.md` for
+an OmegaClaw experiment while leaving any OmegaClaw-Core checkout untouched.
 
 ## Boundary
 
