@@ -14,15 +14,17 @@ The first model layer covers:
 - SELinux-shaped allow facts: `allow(Source, Target, Class, Permission)`
 - boolean-gated conditional allows: `boolean_state(Boolean, State)` and
   `conditional_allow(Boolean, Source, Target, Class, Permission)`
+- explicit constraint denials:
+  `constraint_denies(Source, Target, Class, Permission, Reason)`
 - type attributes: `has_attribute(Type, Attribute)`
 - file-context facts: `file_context(Path, Type, Class)`
 - domain transition facts: `type_transition(Source, Entrypoint, Target)`
 - policy diff facts: `new_allow(PolicyVersion, Source, Target, Class, Permission)`
 - provenance facts: `fact_source(Fact, SourceMetadata)`
 - derived audit predicates for risky web-shell paths, path-resolved domain
-  transition reachability, path-level access, high-risk policy regressions, and
-  severity classification for policy diffs and findings with structured
-  evidence
+  transition reachability, path-level access, constraint-blocked allows,
+  high-risk policy regressions, and severity classification for policy diffs
+  and findings with structured evidence
 
 ## Layout
 

@@ -24,6 +24,9 @@ metta_line(Line) :-
     conditional_allow(Boolean, Source, Target, Class, Permission),
     sexpr_line(['conditional-allow', Boolean, Source, Target, Class, Permission], Line).
 metta_line(Line) :-
+    constraint_denies(Source, Target, Class, Permission, Reason),
+    sexpr_line(['constraint-denies', Source, Target, Class, Permission, Reason], Line).
+metta_line(Line) :-
     has_attribute(Type, Attribute),
     sexpr_line(['has-attribute', Type, Attribute], Line).
 metta_line(Line) :-

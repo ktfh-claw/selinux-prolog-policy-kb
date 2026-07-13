@@ -8,6 +8,7 @@ SETools-style policy analysis output:
 - `allow(Source, Target, Class, Permission)`
 - `boolean_state(Boolean, State)`
 - `conditional_allow(Boolean, Source, Target, Class, Permission)`
+- `constraint_denies(Source, Target, Class, Permission, Reason)`
 - `has_attribute(Type, Attribute)`
 - `type_transition(Source, Entrypoint, Target)`
 - `new_allow(PolicyVersion, Source, Target, Class, Permission)`
@@ -24,6 +25,7 @@ Derived predicates represent local audit questions:
 - `can_access_path/4`
 - `can_read_path/2`
 - `can_read_web_content/1`
+- `access_denied_by_constraint/5`
 - `risky_web_shell_path/3`
 - `risky_executable_content_path/3`
 - `can_domain_transition/3`
@@ -33,10 +35,17 @@ Derived predicates represent local audit questions:
 - `audit_finding/2`
 - `audit_finding_with_evidence/2`
 
-`effective_allow/4` is the access primitive used by `can_access/4`. It includes
-unconditional `allow/4` facts plus `conditional_allow/5` facts whose controlling
-`boolean_state/2` is `true`. Disabled boolean-gated allows are kept as imported
-facts but do not become effective access.
+`effective_allow/4` is the access primitive used by `can_access/4`. It starts
+from unconditional `allow/4` facts plus `conditional_allow/5` facts whose
+controlling `boolean_state/2` is `true`, then removes any access covered by an
+explicit `constraint_denies/5` fact. Disabled boolean-gated allows and
+constraint-blocked allows are kept as imported facts but do not become effective
+access.
+
+`constraint_denies/5` is an already-normalized imported fact, not a full
+implementation of SELinux constraint expression evaluation. This keeps the
+initial model reviewable while preserving the important audit behavior: an allow
+rule can be present but non-effective because another policy layer denies it.
 
 `fixtures/omegaclaw_knowledge_prior.md` is generated from the MeTTa export and
 adds a small set of OmegaClaw `metta` commands for the first import/read
@@ -70,7 +79,7 @@ The model is sound only relative to the facts provided and the local rules in
 It does not yet model:
 
 - nested conditional expressions beyond one controlling boolean
-- constraints and MLS/MCS labels
+- full SELinux constraint expressions and MLS/MCS range algebra
 - type bounds
 - role/user mappings
 - file-context path matching

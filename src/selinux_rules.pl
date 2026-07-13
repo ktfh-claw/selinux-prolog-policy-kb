@@ -4,6 +4,7 @@
     can_access_path/4,
     can_read_web_content/1,
     can_read_path/2,
+    access_denied_by_constraint/5,
     risky_web_shell_path/3,
     risky_executable_content_path/3,
     can_domain_transition/3,
@@ -17,8 +18,12 @@
 :- use_module(selinux_facts).
 
 effective_allow(Source, Target, Class, Permission) :-
+    effective_allow_candidate(Source, Target, Class, Permission),
+    \+ constraint_denies(Source, Target, Class, Permission, _Reason).
+
+effective_allow_candidate(Source, Target, Class, Permission) :-
     allow(Source, Target, Class, Permission).
-effective_allow(Source, Target, Class, Permission) :-
+effective_allow_candidate(Source, Target, Class, Permission) :-
     conditional_allow(Boolean, Source, Target, Class, Permission),
     boolean_state(Boolean, true).
 
@@ -30,13 +35,17 @@ can_access_path(Source, Path, Class, Permission) :-
     effective_allow(Source, Target, Class, Permission).
 
 can_read_web_content(Source) :-
-    allow(Source, httpd_sys_content_t, file, read).
+    effective_allow(Source, httpd_sys_content_t, file, read).
 
 can_read_path(Source, Path) :-
     can_access_path(Source, Path, file, read).
 
+access_denied_by_constraint(Source, Target, Class, Permission, Reason) :-
+    effective_allow_candidate(Source, Target, Class, Permission),
+    constraint_denies(Source, Target, Class, Permission, Reason).
+
 risky_web_shell_path(Source, Target, write_executable_content) :-
-    allow(Source, Target, file, write),
+    effective_allow(Source, Target, file, write),
     has_attribute(Source, webserver_domain),
     has_attribute(Target, executable_content).
 
@@ -46,8 +55,8 @@ risky_executable_content_path(Source, Path, write_executable_content) :-
 
 can_domain_transition(Source, Entrypoint, Target) :-
     type_transition(Source, Entrypoint, Target),
-    allow(Source, Entrypoint, file, entrypoint),
-    allow(Source, Target, process, transition).
+    effective_allow(Source, Entrypoint, file, entrypoint),
+    effective_allow(Source, Target, process, transition).
 
 can_domain_transition_via_path(Source, EntrypointPath, Target) :-
     file_context(EntrypointPath, Entrypoint, file),
@@ -94,6 +103,15 @@ audit_finding(high_risk_policy_regression, finding{
     permission: Permission
 }) :-
     high_risk_policy_regression(PolicyVersion, Source, Target, Class, Permission).
+
+audit_finding(constraint_blocked_allow, finding{
+    source: Source,
+    target: Target,
+    class: Class,
+    permission: Permission,
+    reason: Reason
+}) :-
+    access_denied_by_constraint(Source, Target, Class, Permission, Reason).
 
 audit_finding_with_evidence(Kind, FindingWithEvidence) :-
     audit_finding(Kind, Finding),
@@ -142,3 +160,19 @@ audit_evidence(high_risk_policy_regression, Finding, Evidence) :-
         NewAllowSource
     ),
     fact_source(has_attribute(Target, credential_store), TargetAttributeSource).
+
+audit_evidence(constraint_blocked_allow, Finding, Evidence) :-
+    Source = Finding.source,
+    Target = Finding.target,
+    Class = Finding.class,
+    Permission = Finding.permission,
+    Reason = Finding.reason,
+    Evidence = [
+        allow(Source, Target, Class, Permission)-AllowSource,
+        constraint_denies(Source, Target, Class, Permission, Reason)-ConstraintSource
+    ],
+    fact_source(allow(Source, Target, Class, Permission), AllowSource),
+    fact_source(
+        constraint_denies(Source, Target, Class, Permission, Reason),
+        ConstraintSource
+    ).

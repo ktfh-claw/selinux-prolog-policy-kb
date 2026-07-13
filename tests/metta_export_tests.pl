@@ -43,6 +43,13 @@ test(omegaclaw_prior_contains_path_and_severity_baselines) :-
         _,
         _,
         _,
+        '(constraint-denies user_t secret_doc_t file read mls_range_mismatch)'
+    )),
+    once(sub_string(
+        Text,
+        _,
+        _,
+        _,
         '(file-context "/var/www/cgi-bin/admin.cgi" httpd_sys_script_exec_t file)'
     )),
     once(sub_string(
@@ -51,6 +58,13 @@ test(omegaclaw_prior_contains_path_and_severity_baselines) :-
         _,
         _,
         '(policy-regression-severity policy_v2 httpd_t shadow_t file read critical)'
+    )),
+    once(sub_string(
+        Text,
+        _,
+        _,
+        _,
+        'blocked_secret_doc_read_for_user_t'
     )),
     once(sub_string(
         Text,

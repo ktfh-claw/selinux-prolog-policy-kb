@@ -15,7 +15,7 @@ test(disabled_conditional_is_not_effective, [fail]) :-
     can_access(httpd_t, user_home_t, file, read).
 
 test(derived_read_web_content) :-
-    can_read_web_content(httpd_t).
+    once(can_read_web_content(httpd_t)).
 
 test(path_read_web_content) :-
     once(can_access_path(httpd_t, '/var/www/html/index.html', file, read)).
@@ -28,6 +28,21 @@ test(negative_path_write_static_content, [fail]) :-
 
 test(disabled_conditional_path_read, [fail]) :-
     can_access_path(httpd_t, '/home/alice/public_html/index.html', file, read).
+
+test(constrained_allow_is_not_effective, [fail]) :-
+    can_access(user_t, secret_doc_t, file, read).
+
+test(constrained_path_read_is_not_effective, [fail]) :-
+    can_read_path(user_t, '/srv/secret/report.txt').
+
+test(access_denied_by_constraint) :-
+    once(access_denied_by_constraint(
+        user_t,
+        secret_doc_t,
+        file,
+        read,
+        mls_range_mismatch
+    )).
 
 test(risky_web_shell_path) :-
     once(risky_web_shell_path(
@@ -51,10 +66,10 @@ test(negative_log_path_is_not_executable_content, [fail]) :-
     ).
 
 test(domain_transition) :-
-    can_domain_transition(init_t, daemon_exec_t, daemon_t).
+    once(can_domain_transition(init_t, daemon_exec_t, daemon_t)).
 
 test(domain_transition_via_path) :-
-    can_domain_transition_via_path(init_t, '/usr/sbin/exampled', daemon_t).
+    once(can_domain_transition_via_path(init_t, '/usr/sbin/exampled', daemon_t)).
 
 test(negative_domain_transition_via_non_entrypoint_path, [fail]) :-
     can_domain_transition_via_path(init_t, '/var/www/html/index.html', daemon_t).
@@ -93,7 +108,7 @@ test(policy_regression_severity_low) :-
     )).
 
 test(audit_finding_web_shell_shape) :-
-    audit_finding(risky_web_shell_path, Finding),
+    once(audit_finding(risky_web_shell_path, Finding)),
     assertion(Finding.source == httpd_t),
     assertion(Finding.target == httpd_sys_script_exec_t).
 
@@ -106,6 +121,12 @@ test(audit_finding_policy_regression_shape) :-
     once(audit_finding(high_risk_policy_regression, Finding)),
     assertion(Finding.policy_version == policy_v2),
     assertion(Finding.target == shadow_t).
+
+test(audit_finding_constraint_shape) :-
+    once(audit_finding(constraint_blocked_allow, Finding)),
+    assertion(Finding.source == user_t),
+    assertion(Finding.target == secret_doc_t),
+    assertion(Finding.reason == mls_range_mismatch).
 
 test(audit_finding_web_shell_evidence) :-
     once(audit_finding_with_evidence(risky_web_shell_path, Finding)),
@@ -133,6 +154,14 @@ test(audit_finding_policy_regression_evidence) :-
     assertion(Finding.evidence = [
         new_allow(policy_v2, httpd_t, shadow_t, file, read)-_,
         has_attribute(shadow_t, credential_store)-_
+    ]).
+
+test(audit_finding_constraint_evidence) :-
+    once(audit_finding_with_evidence(constraint_blocked_allow, Finding)),
+    assertion(Finding.reason == mls_range_mismatch),
+    assertion(Finding.evidence = [
+        allow(user_t, secret_doc_t, file, read)-_,
+        constraint_denies(user_t, secret_doc_t, file, read, mls_range_mismatch)-_
     ]).
 
 :- end_tests(selinux_rules).

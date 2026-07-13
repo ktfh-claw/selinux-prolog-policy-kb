@@ -2,6 +2,7 @@
     allow/4,
     boolean_state/2,
     conditional_allow/5,
+    constraint_denies/5,
     has_attribute/2,
     type_transition/3,
     new_allow/5,
@@ -17,12 +18,15 @@ allow(httpd_t, httpd_sys_script_exec_t, file, write).
 allow(httpd_t, httpd_sys_script_exec_t, file, read).
 allow(init_t, daemon_exec_t, file, entrypoint).
 allow(init_t, daemon_t, process, transition).
+allow(user_t, secret_doc_t, file, read).
 
 boolean_state(httpd_can_network_connect, true).
 boolean_state(httpd_enable_homedirs, false).
 
 conditional_allow(httpd_can_network_connect, httpd_t, http_port_t, tcp_socket, name_connect).
 conditional_allow(httpd_enable_homedirs, httpd_t, user_home_t, file, read).
+
+constraint_denies(user_t, secret_doc_t, file, read, mls_range_mismatch).
 
 has_attribute(httpd_t, webserver_domain).
 has_attribute(httpd_sys_script_exec_t, executable_content).
@@ -40,6 +44,7 @@ file_context('/var/log/httpd/access.log', httpd_log_t, file).
 file_context('/etc/shadow', shadow_t, file).
 file_context('/usr/sbin/exampled', daemon_exec_t, file).
 file_context('/home/alice/public_html/index.html', user_home_t, file).
+file_context('/srv/secret/report.txt', secret_doc_t, file).
 
 fact_source(
     allow(httpd_t, httpd_sys_content_t, file, read),
@@ -65,6 +70,10 @@ fact_source(
     allow(init_t, daemon_t, process, transition),
     source{tool: setools, artifact: 'toy_policy.allow', selector: 'allow init_t daemon_t:process transition'}
 ).
+fact_source(
+    allow(user_t, secret_doc_t, file, read),
+    source{tool: setools, artifact: 'toy_policy.allow', selector: 'allow user_t secret_doc_t:file read'}
+).
 
 fact_source(
     boolean_state(httpd_can_network_connect, true),
@@ -82,6 +91,11 @@ fact_source(
 fact_source(
     conditional_allow(httpd_enable_homedirs, httpd_t, user_home_t, file, read),
     source{tool: setools, artifact: 'toy_policy.conditional_allow', selector: 'if httpd_enable_homedirs allow httpd_t user_home_t:file read'}
+).
+
+fact_source(
+    constraint_denies(user_t, secret_doc_t, file, read, mls_range_mismatch),
+    source{tool: setools, artifact: 'toy_policy.constraints', selector: 'constrain file read (mls range mismatch)'}
 ).
 
 fact_source(
@@ -138,4 +152,8 @@ fact_source(
 fact_source(
     file_context('/home/alice/public_html/index.html', user_home_t, file),
     source{tool: matchpathcon, artifact: 'toy_file_contexts', selector: '/home/alice/public_html/index.html'}
+).
+fact_source(
+    file_context('/srv/secret/report.txt', secret_doc_t, file),
+    source{tool: matchpathcon, artifact: 'toy_file_contexts', selector: '/srv/secret/report.txt'}
 ).
