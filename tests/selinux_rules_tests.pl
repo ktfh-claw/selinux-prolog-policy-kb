@@ -44,6 +44,12 @@ test(negative_log_path_is_not_executable_content, [fail]) :-
 test(domain_transition) :-
     can_domain_transition(init_t, daemon_exec_t, daemon_t).
 
+test(domain_transition_via_path) :-
+    can_domain_transition_via_path(init_t, '/usr/sbin/exampled', daemon_t).
+
+test(negative_domain_transition_via_non_entrypoint_path, [fail]) :-
+    can_domain_transition_via_path(init_t, '/var/www/html/index.html', daemon_t).
+
 test(high_risk_policy_regression) :-
     once(high_risk_policy_regression(policy_v2, httpd_t, shadow_t, file, read)).
 

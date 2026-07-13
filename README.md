@@ -16,8 +16,8 @@ The first model layer covers:
 - file-context facts: `file_context(Path, Type, Class)`
 - domain transition facts: `type_transition(Source, Entrypoint, Target)`
 - policy diff facts: `new_allow(PolicyVersion, Source, Target, Class, Permission)`
-- derived audit predicates for risky web-shell paths, domain transition
-  reachability, path-level access, and high-risk policy regressions
+- derived audit predicates for risky web-shell paths, path-resolved domain
+  transition reachability, path-level access, and high-risk policy regressions
 
 ## Layout
 

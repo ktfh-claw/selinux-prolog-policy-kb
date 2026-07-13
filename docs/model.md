@@ -24,6 +24,7 @@ Derived predicates represent local audit questions:
 - `risky_web_shell_path/3`
 - `risky_executable_content_path/3`
 - `can_domain_transition/3`
+- `can_domain_transition_via_path/3`
 - `high_risk_policy_regression/5`
 - `audit_finding/2`
 

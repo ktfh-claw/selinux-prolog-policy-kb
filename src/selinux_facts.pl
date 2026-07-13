@@ -27,3 +27,4 @@ file_context('/var/www/html/index.html', httpd_sys_content_t, file).
 file_context('/var/www/cgi-bin/admin.cgi', httpd_sys_script_exec_t, file).
 file_context('/var/log/httpd/access.log', httpd_log_t, file).
 file_context('/etc/shadow', shadow_t, file).
+file_context('/usr/sbin/exampled', daemon_exec_t, file).

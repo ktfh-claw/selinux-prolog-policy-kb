@@ -6,6 +6,7 @@
     risky_web_shell_path/3,
     risky_executable_content_path/3,
     can_domain_transition/3,
+    can_domain_transition_via_path/3,
     high_risk_policy_regression/5,
     audit_finding/2
 ]).
@@ -38,6 +39,10 @@ can_domain_transition(Source, Entrypoint, Target) :-
     type_transition(Source, Entrypoint, Target),
     allow(Source, Entrypoint, file, entrypoint),
     allow(Source, Target, process, transition).
+
+can_domain_transition_via_path(Source, EntrypointPath, Target) :-
+    file_context(EntrypointPath, Entrypoint, file),
+    can_domain_transition(Source, Entrypoint, Target).
 
 high_risk_policy_regression(PolicyVersion, Source, Target, Class, Permission) :-
     new_allow(PolicyVersion, Source, Target, Class, Permission),
