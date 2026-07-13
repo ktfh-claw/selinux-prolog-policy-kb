@@ -5,6 +5,9 @@
     can_read_web_content/1,
     can_read_path/2,
     access_denied_by_constraint/5,
+    sensitivity_dominates/2,
+    mls_read_allowed/2,
+    mls_read_blocked/3,
     risky_web_shell_path/3,
     risky_executable_content_path/3,
     can_domain_transition/3,
@@ -43,6 +46,26 @@ can_read_path(Source, Path) :-
 access_denied_by_constraint(Source, Target, Class, Permission, Reason) :-
     effective_allow_candidate(Source, Target, Class, Permission),
     constraint_denies(Source, Target, Class, Permission, Reason).
+
+sensitivity_dominates(SourceLevel, TargetLevel) :-
+    sensitivity_level(SourceLevel, SourceRank),
+    sensitivity_level(TargetLevel, TargetRank),
+    SourceRank >= TargetRank.
+
+mls_read_allowed(Source, Target) :-
+    mls_range(Source, _SourceLow, SourceHigh, SourceCategories),
+    mls_range(Target, _TargetLow, TargetHigh, TargetCategories),
+    sensitivity_dominates(SourceHigh, TargetHigh),
+    categories_include(SourceCategories, TargetCategories).
+
+mls_read_blocked(Source, Target, insufficient_mls_range) :-
+    allow(Source, Target, file, read),
+    mls_range(Source, _SourceLow, _SourceHigh, _SourceCategories),
+    mls_range(Target, _TargetLow, _TargetHigh, _TargetCategories),
+    \+ mls_read_allowed(Source, Target).
+
+categories_include(SourceCategories, TargetCategories) :-
+    forall(member(Category, TargetCategories), member(Category, SourceCategories)).
 
 risky_web_shell_path(Source, Target, write_executable_content) :-
     effective_allow(Source, Target, file, write),
@@ -113,6 +136,13 @@ audit_finding(constraint_blocked_allow, finding{
 }) :-
     access_denied_by_constraint(Source, Target, Class, Permission, Reason).
 
+audit_finding(mls_blocked_read, finding{
+    source: Source,
+    target: Target,
+    reason: Reason
+}) :-
+    mls_read_blocked(Source, Target, Reason).
+
 audit_finding_with_evidence(Kind, FindingWithEvidence) :-
     audit_finding(Kind, Finding),
     audit_evidence(Kind, Finding, Evidence),
@@ -175,4 +205,22 @@ audit_evidence(constraint_blocked_allow, Finding, Evidence) :-
     fact_source(
         constraint_denies(Source, Target, Class, Permission, Reason),
         ConstraintSource
+    ).
+
+audit_evidence(mls_blocked_read, Finding, Evidence) :-
+    Source = Finding.source,
+    Target = Finding.target,
+    Evidence = [
+        allow(Source, Target, file, read)-AllowSource,
+        mls_range(Source, SourceLow, SourceHigh, SourceCategories)-SourceRangeSource,
+        mls_range(Target, TargetLow, TargetHigh, TargetCategories)-TargetRangeSource
+    ],
+    fact_source(allow(Source, Target, file, read), AllowSource),
+    fact_source(
+        mls_range(Source, SourceLow, SourceHigh, SourceCategories),
+        SourceRangeSource
+    ),
+    fact_source(
+        mls_range(Target, TargetLow, TargetHigh, TargetCategories),
+        TargetRangeSource
     ).

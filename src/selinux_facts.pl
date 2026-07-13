@@ -3,6 +3,8 @@
     boolean_state/2,
     conditional_allow/5,
     constraint_denies/5,
+    sensitivity_level/2,
+    mls_range/4,
     has_attribute/2,
     type_transition/3,
     new_allow/5,
@@ -19,6 +21,8 @@ allow(httpd_t, httpd_sys_script_exec_t, file, read).
 allow(init_t, daemon_exec_t, file, entrypoint).
 allow(init_t, daemon_t, process, transition).
 allow(user_t, secret_doc_t, file, read).
+allow(auditor_t, secret_doc_t, file, read).
+allow(auditor_limited_t, secret_doc_t, file, read).
 
 boolean_state(httpd_can_network_connect, true).
 boolean_state(httpd_enable_homedirs, false).
@@ -27,6 +31,14 @@ conditional_allow(httpd_can_network_connect, httpd_t, http_port_t, tcp_socket, n
 conditional_allow(httpd_enable_homedirs, httpd_t, user_home_t, file, read).
 
 constraint_denies(user_t, secret_doc_t, file, read, mls_range_mismatch).
+
+sensitivity_level(s0, 0).
+sensitivity_level(s1, 1).
+
+mls_range(user_t, s0, s0, [c0]).
+mls_range(auditor_t, s0, s1, [c0, c1]).
+mls_range(auditor_limited_t, s0, s1, [c0]).
+mls_range(secret_doc_t, s1, s1, [c1]).
 
 has_attribute(httpd_t, webserver_domain).
 has_attribute(httpd_sys_script_exec_t, executable_content).
@@ -74,6 +86,14 @@ fact_source(
     allow(user_t, secret_doc_t, file, read),
     source{tool: setools, artifact: 'toy_policy.allow', selector: 'allow user_t secret_doc_t:file read'}
 ).
+fact_source(
+    allow(auditor_t, secret_doc_t, file, read),
+    source{tool: setools, artifact: 'toy_policy.allow', selector: 'allow auditor_t secret_doc_t:file read'}
+).
+fact_source(
+    allow(auditor_limited_t, secret_doc_t, file, read),
+    source{tool: setools, artifact: 'toy_policy.allow', selector: 'allow auditor_limited_t secret_doc_t:file read'}
+).
 
 fact_source(
     boolean_state(httpd_can_network_connect, true),
@@ -96,6 +116,32 @@ fact_source(
 fact_source(
     constraint_denies(user_t, secret_doc_t, file, read, mls_range_mismatch),
     source{tool: setools, artifact: 'toy_policy.constraints', selector: 'constrain file read (mls range mismatch)'}
+).
+
+fact_source(
+    sensitivity_level(s0, 0),
+    source{tool: setools, artifact: 'toy_policy.mls', selector: 'sensitivity s0 rank 0'}
+).
+fact_source(
+    sensitivity_level(s1, 1),
+    source{tool: setools, artifact: 'toy_policy.mls', selector: 'sensitivity s1 rank 1'}
+).
+
+fact_source(
+    mls_range(user_t, s0, s0, [c0]),
+    source{tool: sepolicy, artifact: 'toy_policy.mls', selector: 'user_t:s0-s0:c0'}
+).
+fact_source(
+    mls_range(auditor_t, s0, s1, [c0, c1]),
+    source{tool: sepolicy, artifact: 'toy_policy.mls', selector: 'auditor_t:s0-s1:c0,c1'}
+).
+fact_source(
+    mls_range(auditor_limited_t, s0, s1, [c0]),
+    source{tool: sepolicy, artifact: 'toy_policy.mls', selector: 'auditor_limited_t:s0-s1:c0'}
+).
+fact_source(
+    mls_range(secret_doc_t, s1, s1, [c1]),
+    source{tool: sepolicy, artifact: 'toy_policy.mls', selector: 'secret_doc_t:s1-s1:c1'}
 ).
 
 fact_source(

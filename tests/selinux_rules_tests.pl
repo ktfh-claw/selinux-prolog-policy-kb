@@ -44,6 +44,28 @@ test(access_denied_by_constraint) :-
         mls_range_mismatch
     )).
 
+test(sensitivity_dominates_same_level) :-
+    once(sensitivity_dominates(s0, s0)).
+
+test(sensitivity_dominates_higher_level) :-
+    once(sensitivity_dominates(s1, s0)).
+
+test(sensitivity_does_not_dominate_higher_target, [fail]) :-
+    sensitivity_dominates(s0, s1).
+
+test(mls_read_allowed_when_range_and_categories_cover_target) :-
+    once(mls_read_allowed(auditor_t, secret_doc_t)).
+
+test(mls_read_blocked_by_sensitivity) :-
+    once(mls_read_blocked(user_t, secret_doc_t, insufficient_mls_range)).
+
+test(mls_read_blocked_by_missing_category) :-
+    once(mls_read_blocked(
+        auditor_limited_t,
+        secret_doc_t,
+        insufficient_mls_range
+    )).
+
 test(risky_web_shell_path) :-
     once(risky_web_shell_path(
         httpd_t,
@@ -128,6 +150,12 @@ test(audit_finding_constraint_shape) :-
     assertion(Finding.target == secret_doc_t),
     assertion(Finding.reason == mls_range_mismatch).
 
+test(audit_finding_mls_shape) :-
+    once(audit_finding(mls_blocked_read, Finding)),
+    assertion(Finding.source == user_t),
+    assertion(Finding.target == secret_doc_t),
+    assertion(Finding.reason == insufficient_mls_range).
+
 test(audit_finding_web_shell_evidence) :-
     once(audit_finding_with_evidence(risky_web_shell_path, Finding)),
     assertion(Finding.source == httpd_t),
@@ -162,6 +190,15 @@ test(audit_finding_constraint_evidence) :-
     assertion(Finding.evidence = [
         allow(user_t, secret_doc_t, file, read)-_,
         constraint_denies(user_t, secret_doc_t, file, read, mls_range_mismatch)-_
+    ]).
+
+test(audit_finding_mls_evidence) :-
+    once(audit_finding_with_evidence(mls_blocked_read, Finding)),
+    assertion(Finding.reason == insufficient_mls_range),
+    assertion(Finding.evidence = [
+        allow(user_t, secret_doc_t, file, read)-_,
+        mls_range(user_t, s0, s0, [c0])-_,
+        mls_range(secret_doc_t, s1, s1, [c1])-_
     ]).
 
 :- end_tests(selinux_rules).

@@ -7,6 +7,8 @@ The source facts are toy SETools/sepolicy_analysis-shaped facts, not a real host
 
 Use these as structured facts for OmegaClaw MeTTa/NAL reasoning experiments.
 
+- `(allow auditor_limited_t secret_doc_t file read)`
+- `(allow auditor_t secret_doc_t file read)`
 - `(allow httpd_t httpd_log_t file append)`
 - `(allow httpd_t httpd_sys_content_t file read)`
 - `(allow httpd_t httpd_sys_script_exec_t file read)`
@@ -16,6 +18,8 @@ Use these as structured facts for OmegaClaw MeTTa/NAL reasoning experiments.
 - `(allow user_t secret_doc_t file read)`
 - `(audit-finding constraint_blocked_allow (class file) (permission read) (reason mls_range_mismatch) (source user_t) (target secret_doc_t))`
 - `(audit-finding high_risk_policy_regression (class file) (permission read) (policy_version policy_v2) (source httpd_t) (target shadow_t))`
+- `(audit-finding mls_blocked_read (reason insufficient_mls_range) (source auditor_limited_t) (target secret_doc_t))`
+- `(audit-finding mls_blocked_read (reason insufficient_mls_range) (source user_t) (target secret_doc_t))`
 - `(audit-finding risky_executable_content_path (path "/var/www/cgi-bin/admin.cgi") (reason write_executable_content) (source httpd_t))`
 - `(audit-finding risky_web_shell_path (reason write_executable_content) (source httpd_t) (target httpd_sys_script_exec_t))`
 - `(boolean-state httpd_can_network_connect true)`
@@ -33,12 +37,18 @@ Use these as structured facts for OmegaClaw MeTTa/NAL reasoning experiments.
 - `(has-attribute httpd_sys_script_exec_t executable_content)`
 - `(has-attribute httpd_t webserver_domain)`
 - `(has-attribute shadow_t credential_store)`
+- `(mls-range auditor_limited_t s0 s1 (c0))`
+- `(mls-range auditor_t s0 s1 (c0 c1))`
+- `(mls-range secret_doc_t s1 s1 (c1))`
+- `(mls-range user_t s0 s0 (c0))`
 - `(new-allow policy_v2 httpd_t httpd_log_t file getattr)`
 - `(new-allow policy_v2 httpd_t httpd_sys_script_exec_t file write)`
 - `(new-allow policy_v2 httpd_t shadow_t file read)`
 - `(policy-regression-severity policy_v2 httpd_t httpd_log_t file getattr low)`
 - `(policy-regression-severity policy_v2 httpd_t httpd_sys_script_exec_t file write high)`
 - `(policy-regression-severity policy_v2 httpd_t shadow_t file read critical)`
+- `(sensitivity-level s0 0)`
+- `(sensitivity-level s1 1)`
 - `(type-transition init_t daemon_exec_t daemon_t)`
 
 ## Baseline OmegaClaw Commands
@@ -53,6 +63,7 @@ metta (|- ((==> (allow httpd_t httpd_sys_script_exec_t file write) risky_executa
 metta (|- ((==> (type-transition init_t daemon_exec_t daemon_t) can_transition_init_to_daemon_via_usr_sbin_exampled) (stv 1.0 0.95)) ((type-transition init_t daemon_exec_t daemon_t) (stv 1.0 0.95)))
 metta (|- ((==> (new-allow policy_v2 httpd_t shadow_t file read) critical_policy_regression_policy_v2_httpd_shadow_read) (stv 1.0 0.95)) ((new-allow policy_v2 httpd_t shadow_t file read) (stv 1.0 0.95)))
 metta (|- ((==> (constraint-denies user_t secret_doc_t file read mls_range_mismatch) blocked_secret_doc_read_for_user_t) (stv 1.0 0.95)) ((constraint-denies user_t secret_doc_t file read mls_range_mismatch) (stv 1.0 0.95)))
+metta (|- ((==> (mls-range user_t s0 s0 (c0)) mls_blocked_secret_doc_read_for_user_t) (stv 1.0 0.95)) ((mls-range user_t s0 s0 (c0)) (stv 1.0 0.95)))
 ```
 
 ## Expected Use
@@ -62,4 +73,4 @@ The useful result is not that the toy facts are realistic; it is whether OmegaCl
 
 ## Soundness Boundary
 
-This fixture models only simple boolean-gated conditionals and explicit constraint-denial facts. It does not model nested conditional expressions, full SELinux constraint expressions, MLS/MCS range algebra, roles, users, type bounds, DAC, capabilities, seccomp, namespaces, cgroups, or firewall policy.
+This fixture models only simple boolean-gated conditionals, explicit constraint-denial facts, and a narrow read-side MLS/MCS range check. It does not model nested conditional expressions, full SELinux constraint expressions, write-side MLS/MCS range algebra, roles, users, type bounds, DAC, capabilities, seccomp, namespaces, cgroups, or firewall policy.

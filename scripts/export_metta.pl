@@ -27,6 +27,12 @@ metta_line(Line) :-
     constraint_denies(Source, Target, Class, Permission, Reason),
     sexpr_line(['constraint-denies', Source, Target, Class, Permission, Reason], Line).
 metta_line(Line) :-
+    sensitivity_level(Level, Rank),
+    sexpr_line(['sensitivity-level', Level, Rank], Line).
+metta_line(Line) :-
+    mls_range(Entity, Low, High, Categories),
+    sexpr_line(['mls-range', Entity, Low, High, Categories], Line).
+metta_line(Line) :-
     has_attribute(Type, Attribute),
     sexpr_line(['has-attribute', Type, Attribute], Line).
 metta_line(Line) :-

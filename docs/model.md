@@ -9,6 +9,8 @@ SETools-style policy analysis output:
 - `boolean_state(Boolean, State)`
 - `conditional_allow(Boolean, Source, Target, Class, Permission)`
 - `constraint_denies(Source, Target, Class, Permission, Reason)`
+- `sensitivity_level(Level, Rank)`
+- `mls_range(Entity, LowLevel, HighLevel, Categories)`
 - `has_attribute(Type, Attribute)`
 - `type_transition(Source, Entrypoint, Target)`
 - `new_allow(PolicyVersion, Source, Target, Class, Permission)`
@@ -26,6 +28,9 @@ Derived predicates represent local audit questions:
 - `can_read_path/2`
 - `can_read_web_content/1`
 - `access_denied_by_constraint/5`
+- `sensitivity_dominates/2`
+- `mls_read_allowed/2`
+- `mls_read_blocked/3`
 - `risky_web_shell_path/3`
 - `risky_executable_content_path/3`
 - `can_domain_transition/3`
@@ -46,6 +51,13 @@ access.
 implementation of SELinux constraint expression evaluation. This keeps the
 initial model reviewable while preserving the important audit behavior: an allow
 rule can be present but non-effective because another policy layer denies it.
+
+`mls_range/4` and `sensitivity_level/2` provide a first normalized MLS/MCS
+layer. `mls_read_allowed/2` checks the narrow read case where the subject high
+level dominates the object high level and the subject categories include all
+object categories. `mls_read_blocked/3` exposes imported read allows that fail
+that range check. This is intentionally smaller than SELinux constraint
+expression evaluation; it is a reviewable bridge toward richer range algebra.
 
 `fixtures/omegaclaw_knowledge_prior.md` is generated from the MeTTa export and
 adds a small set of OmegaClaw `metta` commands for the first import/read
@@ -79,7 +91,7 @@ The model is sound only relative to the facts provided and the local rules in
 It does not yet model:
 
 - nested conditional expressions beyond one controlling boolean
-- full SELinux constraint expressions and MLS/MCS range algebra
+- full SELinux constraint expressions and write-side MLS/MCS range algebra
 - type bounds
 - role/user mappings
 - file-context path matching

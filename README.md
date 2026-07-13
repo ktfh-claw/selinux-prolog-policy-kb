@@ -16,6 +16,8 @@ The first model layer covers:
   `conditional_allow(Boolean, Source, Target, Class, Permission)`
 - explicit constraint denials:
   `constraint_denies(Source, Target, Class, Permission, Reason)`
+- toy MLS/MCS range facts: `sensitivity_level(Level, Rank)` and
+  `mls_range(Entity, LowLevel, HighLevel, Categories)`
 - type attributes: `has_attribute(Type, Attribute)`
 - file-context facts: `file_context(Path, Type, Class)`
 - domain transition facts: `type_transition(Source, Entrypoint, Target)`
@@ -23,8 +25,8 @@ The first model layer covers:
 - provenance facts: `fact_source(Fact, SourceMetadata)`
 - derived audit predicates for risky web-shell paths, path-resolved domain
   transition reachability, path-level access, constraint-blocked allows,
-  high-risk policy regressions, and severity classification for policy diffs
-  and findings with structured evidence
+  MLS range-blocked reads, high-risk policy regressions, and severity
+  classification for policy diffs and findings with structured evidence
 
 ## Layout
 

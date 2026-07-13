@@ -57,6 +57,20 @@ test(omegaclaw_prior_contains_path_and_severity_baselines) :-
         _,
         _,
         _,
+        '(mls-range user_t s0 s0 (c0))'
+    )),
+    once(sub_string(
+        Text,
+        _,
+        _,
+        _,
+        '(mls-range auditor_t s0 s1 (c0 c1))'
+    )),
+    once(sub_string(
+        Text,
+        _,
+        _,
+        _,
         '(policy-regression-severity policy_v2 httpd_t shadow_t file read critical)'
     )),
     once(sub_string(
@@ -65,6 +79,13 @@ test(omegaclaw_prior_contains_path_and_severity_baselines) :-
         _,
         _,
         'blocked_secret_doc_read_for_user_t'
+    )),
+    once(sub_string(
+        Text,
+        _,
+        _,
+        _,
+        'mls_blocked_secret_doc_read_for_user_t'
     )),
     once(sub_string(
         Text,

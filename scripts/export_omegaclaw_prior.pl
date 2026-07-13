@@ -63,6 +63,7 @@ baseline_query_lines([
     'metta (|- ((==> (type-transition init_t daemon_exec_t daemon_t) can_transition_init_to_daemon_via_usr_sbin_exampled) (stv 1.0 0.95)) ((type-transition init_t daemon_exec_t daemon_t) (stv 1.0 0.95)))',
     'metta (|- ((==> (new-allow policy_v2 httpd_t shadow_t file read) critical_policy_regression_policy_v2_httpd_shadow_read) (stv 1.0 0.95)) ((new-allow policy_v2 httpd_t shadow_t file read) (stv 1.0 0.95)))',
     'metta (|- ((==> (constraint-denies user_t secret_doc_t file read mls_range_mismatch) blocked_secret_doc_read_for_user_t) (stv 1.0 0.95)) ((constraint-denies user_t secret_doc_t file read mls_range_mismatch) (stv 1.0 0.95)))',
+    'metta (|- ((==> (mls-range user_t s0 s0 (c0)) mls_blocked_secret_doc_read_for_user_t) (stv 1.0 0.95)) ((mls-range user_t s0 s0 (c0)) (stv 1.0 0.95)))',
     '```'
 ]).
 
@@ -75,5 +76,5 @@ boundary_lines([
     '',
     '## Soundness Boundary',
     '',
-    'This fixture models only simple boolean-gated conditionals and explicit constraint-denial facts. It does not model nested conditional expressions, full SELinux constraint expressions, MLS/MCS range algebra, roles, users, type bounds, DAC, capabilities, seccomp, namespaces, cgroups, or firewall policy.'
+    'This fixture models only simple boolean-gated conditionals, explicit constraint-denial facts, and a narrow read-side MLS/MCS range check. It does not model nested conditional expressions, full SELinux constraint expressions, write-side MLS/MCS range algebra, roles, users, type bounds, DAC, capabilities, seccomp, namespaces, cgroups, or firewall policy.'
 ]).
