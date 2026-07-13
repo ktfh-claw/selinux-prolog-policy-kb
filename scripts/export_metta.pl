@@ -48,6 +48,9 @@ metta_line(Line) :-
     file_context(Path, Type, Class),
     sexpr_line(['file-context', Path, Type, Class], Line).
 metta_line(Line) :-
+    port_context(Port, Type, Protocol),
+    sexpr_line(['port-context', Port, Type, Protocol], Line).
+metta_line(Line) :-
     audit_finding(Kind, Finding),
     finding_terms(Finding, Terms),
     sexpr_line(['audit-finding', Kind | Terms], Line).

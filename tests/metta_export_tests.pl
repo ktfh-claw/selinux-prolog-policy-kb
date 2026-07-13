@@ -71,6 +71,13 @@ test(omegaclaw_prior_contains_path_and_severity_baselines) :-
         _,
         _,
         _,
+        '(port-context 80 http_port_t tcp)'
+    )),
+    once(sub_string(
+        Text,
+        _,
+        _,
+        _,
         '(type-bound sandbox_web_t sandbox_web_parent_t)'
     )),
     once(sub_string(
@@ -86,6 +93,13 @@ test(omegaclaw_prior_contains_path_and_severity_baselines) :-
         _,
         _,
         'blocked_secret_doc_read_for_user_t'
+    )),
+    once(sub_string(
+        Text,
+        _,
+        _,
+        _,
+        'can_name_connect_http_port_80'
     )),
     once(sub_string(
         Text,

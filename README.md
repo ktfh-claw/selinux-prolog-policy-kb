@@ -21,14 +21,15 @@ The first model layer covers:
 - type-bound facts: `type_bound(ChildType, ParentType)`
 - type attributes: `has_attribute(Type, Attribute)`
 - file-context facts: `file_context(Path, Type, Class)`
+- port-context facts: `port_context(Port, Type, Protocol)`
 - domain transition facts: `type_transition(Source, Entrypoint, Target)`
 - policy diff facts: `new_allow(PolicyVersion, Source, Target, Class, Permission)`
 - provenance facts: `fact_source(Fact, SourceMetadata)`
 - derived audit predicates for risky web-shell paths, path-resolved domain
-  transition reachability, path-level access, constraint-blocked allows,
-  type-bound-blocked allows, MLS range-blocked reads, high-risk policy
-  regressions, and severity classification for policy diffs and findings with
-  structured evidence
+  transition reachability, path-level access, port-level `name_connect`
+  reachability, constraint-blocked allows, type-bound-blocked allows, MLS
+  range-blocked reads, high-risk policy regressions, and severity
+  classification for policy diffs and findings with structured evidence
 
 ## Layout
 

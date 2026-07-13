@@ -4,6 +4,7 @@
     can_access_path/4,
     can_read_web_content/1,
     can_read_path/2,
+    can_name_connect_port/3,
     access_denied_by_constraint/5,
     access_denied_by_type_bound/6,
     sensitivity_dominates/2,
@@ -51,6 +52,14 @@ can_read_web_content(Source) :-
 
 can_read_path(Source, Path) :-
     can_access_path(Source, Path, file, read).
+
+can_name_connect_port(Source, Protocol, Port) :-
+    port_context(Port, PortType, Protocol),
+    socket_class_for_protocol(Protocol, SocketClass),
+    effective_allow(Source, PortType, SocketClass, name_connect).
+
+socket_class_for_protocol(tcp, tcp_socket).
+socket_class_for_protocol(udp, udp_socket).
 
 access_denied_by_constraint(Source, Target, Class, Permission, Reason) :-
     effective_allow_candidate(Source, Target, Class, Permission),

@@ -16,6 +16,7 @@ SETools-style policy analysis output:
 - `type_transition(Source, Entrypoint, Target)`
 - `new_allow(PolicyVersion, Source, Target, Class, Permission)`
 - `file_context(Path, Type, Class)`
+- `port_context(Port, Type, Protocol)`
 - `fact_source(Fact, SourceMetadata)`
 
 These are treated as imported facts.
@@ -28,6 +29,7 @@ Derived predicates represent local audit questions:
 - `can_access_path/4`
 - `can_read_path/2`
 - `can_read_web_content/1`
+- `can_name_connect_port/3`
 - `access_denied_by_constraint/5`
 - `access_denied_by_type_bound/6`
 - `sensitivity_dominates/2`
@@ -77,6 +79,11 @@ baseline checks.
 implementing SELinux regex precedence. A real importer should normalize
 `semanage fcontext`, `matchpathcon`, or SETools-derived output before facts
 reach this model.
+
+`port_context/3` likewise stores already-resolved SELinux port labels. The
+current `can_name_connect_port/3` rule maps TCP and UDP protocols to their
+socket classes and checks effective `name_connect` permission against the
+resolved port type. Firewall policy and runtime socket state are out of scope.
 
 `fact_source/2` stores provenance for imported facts as structured metadata.
 `audit_finding_with_evidence/2` keeps the original finding shape and adds an

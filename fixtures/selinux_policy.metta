@@ -42,6 +42,8 @@
 (policy-regression-severity policy_v2 httpd_t httpd_log_t file getattr low)
 (policy-regression-severity policy_v2 httpd_t httpd_sys_script_exec_t file write high)
 (policy-regression-severity policy_v2 httpd_t shadow_t file read critical)
+(port-context 5432 postgresql_port_t tcp)
+(port-context 80 http_port_t tcp)
 (sensitivity-level s0 0)
 (sensitivity-level s1 1)
 (type-bound sandbox_web_t sandbox_web_parent_t)

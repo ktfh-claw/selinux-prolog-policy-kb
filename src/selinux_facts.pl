@@ -10,6 +10,7 @@
     type_transition/3,
     new_allow/5,
     file_context/3,
+    port_context/3,
     fact_source/2
 ]).
 
@@ -63,6 +64,9 @@ file_context('/etc/shadow', shadow_t, file).
 file_context('/usr/sbin/exampled', daemon_exec_t, file).
 file_context('/home/alice/public_html/index.html', user_home_t, file).
 file_context('/srv/secret/report.txt', secret_doc_t, file).
+
+port_context(80, http_port_t, tcp).
+port_context(5432, postgresql_port_t, tcp).
 
 fact_source(
     allow(httpd_t, httpd_sys_content_t, file, read),
@@ -225,4 +229,13 @@ fact_source(
 fact_source(
     file_context('/srv/secret/report.txt', secret_doc_t, file),
     source{tool: matchpathcon, artifact: 'toy_file_contexts', selector: '/srv/secret/report.txt'}
+).
+
+fact_source(
+    port_context(80, http_port_t, tcp),
+    source{tool: sepolicy, artifact: 'toy_ports', selector: 'http_port_t tcp 80'}
+).
+fact_source(
+    port_context(5432, postgresql_port_t, tcp),
+    source{tool: sepolicy, artifact: 'toy_ports', selector: 'postgresql_port_t tcp 5432'}
 ).

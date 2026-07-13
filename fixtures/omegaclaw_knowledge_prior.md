@@ -51,6 +51,8 @@ Use these as structured facts for OmegaClaw MeTTa/NAL reasoning experiments.
 - `(policy-regression-severity policy_v2 httpd_t httpd_log_t file getattr low)`
 - `(policy-regression-severity policy_v2 httpd_t httpd_sys_script_exec_t file write high)`
 - `(policy-regression-severity policy_v2 httpd_t shadow_t file read critical)`
+- `(port-context 5432 postgresql_port_t tcp)`
+- `(port-context 80 http_port_t tcp)`
 - `(sensitivity-level s0 0)`
 - `(sensitivity-level s1 1)`
 - `(type-bound sandbox_web_t sandbox_web_parent_t)`
@@ -69,6 +71,7 @@ metta (|- ((==> (type-transition init_t daemon_exec_t daemon_t) can_transition_i
 metta (|- ((==> (new-allow policy_v2 httpd_t shadow_t file read) critical_policy_regression_policy_v2_httpd_shadow_read) (stv 1.0 0.95)) ((new-allow policy_v2 httpd_t shadow_t file read) (stv 1.0 0.95)))
 metta (|- ((==> (constraint-denies user_t secret_doc_t file read mls_range_mismatch) blocked_secret_doc_read_for_user_t) (stv 1.0 0.95)) ((constraint-denies user_t secret_doc_t file read mls_range_mismatch) (stv 1.0 0.95)))
 metta (|- ((==> (mls-range user_t s0 s0 (c0)) mls_blocked_secret_doc_read_for_user_t) (stv 1.0 0.95)) ((mls-range user_t s0 s0 (c0)) (stv 1.0 0.95)))
+metta (|- ((==> (port-context 80 http_port_t tcp) can_name_connect_http_port_80) (stv 1.0 0.95)) ((port-context 80 http_port_t tcp) (stv 1.0 0.95)))
 ```
 
 ## Expected Use
@@ -78,4 +81,4 @@ The useful result is not that the toy facts are realistic; it is whether OmegaCl
 
 ## Soundness Boundary
 
-This fixture models only simple boolean-gated conditionals, explicit constraint-denial facts, and a narrow read-side MLS/MCS range check. It does not model nested conditional expressions, full SELinux constraint expressions, write-side MLS/MCS range algebra, roles, users, type bounds, DAC, capabilities, seccomp, namespaces, cgroups, or firewall policy.
+This fixture models only simple boolean-gated conditionals, explicit constraint-denial facts, resolved file and port contexts, type bounds, and a narrow read-side MLS/MCS range check. It does not model nested conditional expressions, full SELinux constraint expressions, write-side MLS/MCS range algebra, roles, users, DAC, capabilities, seccomp, namespaces, cgroups, or firewall policy.

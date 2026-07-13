@@ -23,6 +23,12 @@ test(path_read_web_content) :-
 test(path_read_helper) :-
     once(can_read_path(httpd_t, '/var/www/cgi-bin/admin.cgi')).
 
+test(port_name_connect_from_enabled_boolean) :-
+    once(can_name_connect_port(httpd_t, tcp, 80)).
+
+test(port_name_connect_denies_unallowed_database_port, [fail]) :-
+    can_name_connect_port(httpd_t, tcp, 5432).
+
 test(negative_path_write_static_content, [fail]) :-
     can_access_path(httpd_t, '/var/www/html/index.html', file, write).
 
