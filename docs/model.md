@@ -192,6 +192,10 @@ cgroup limits, and service restart policy. The `admin_action_allowed/3`,
 without reimplementing those lower layers. The conflict predicate catches cases
 where an action is allowed by SELinux but blocked by a runtime layer, such as a
 database egress action with `name_connect` permission and a deny firewall rule.
+The toy action set also includes package-manager cache access, service-unit
+file modification, and VM-launch examples to exercise SELinux-denied and
+cgroup-denied administrator workflows without adding package-manager, systemd,
+or hypervisor semantics.
 `service_admin_action_blocked/4` catches service actions whose unit login maps
 to one domain while the entrypoint transition resolves to another.
 `service_admin_action_risky/4` currently covers the narrow `Restart=always`

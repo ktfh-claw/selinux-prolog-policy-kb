@@ -43,6 +43,27 @@ test(omegaclaw_prior_contains_path_and_severity_baselines) :-
         _,
         _,
         _,
+        '(administrator-action refresh_package_cache ai_agent_t (selinux_access rpm_var_cache_t dir read))'
+    )),
+    once(sub_string(
+        Text,
+        _,
+        _,
+        _,
+        '(administrator-action edit_service_unit ai_agent_t (selinux_access systemd_unit_file_t file write))'
+    )),
+    once(sub_string(
+        Text,
+        _,
+        _,
+        _,
+        '(administrator-action launch_vm_guest ai_agent_t (resource pids 128 count))'
+    )),
+    once(sub_string(
+        Text,
+        _,
+        _,
+        _,
         '(administrator-service-action restart_loop_risk ai_agent_service (restart_policy always))'
     )),
     once(sub_string(
@@ -268,6 +289,27 @@ test(omegaclaw_prior_contains_path_and_severity_baselines) :-
         _,
         _,
         'ai_agent_pids_limited_by_cgroup'
+    )),
+    once(sub_string(
+        Text,
+        _,
+        _,
+        _,
+        'admin_action_refresh_package_cache_selinux_denied'
+    )),
+    once(sub_string(
+        Text,
+        _,
+        _,
+        _,
+        'admin_action_edit_service_unit_selinux_denied'
+    )),
+    once(sub_string(
+        Text,
+        _,
+        _,
+        _,
+        'admin_action_launch_vm_guest_pids_blocked'
     )),
     once(sub_string(
         Text,

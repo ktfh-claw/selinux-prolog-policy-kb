@@ -32,7 +32,8 @@ The first model layer covers:
   `service_unit(Service, Login, EntrypointPath, RestartPolicy)`
 - AI-agent administrator action facts:
   `administrator_action(Action, Source, Primitive)` and
-  `administrator_service_action(Action, Service, Primitive)`
+  `administrator_service_action(Action, Service, Primitive)`, including
+  package-manager, service-modification, and VM-oriented toy examples
 - login/user/role/type mapping facts: `login_mapping(Login, SelinuxUser)`,
   `selinux_user_role(SelinuxUser, Role)`, and `role_type(Role, Type)`
 - type attributes: `has_attribute(Type, Attribute)`

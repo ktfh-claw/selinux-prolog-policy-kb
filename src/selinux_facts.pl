@@ -123,11 +123,22 @@ administrator_action(
 ).
 administrator_action(connect_web_api, ai_agent_t, name_connect(tcp, 80)).
 administrator_action(connect_database, ai_agent_t, name_connect(tcp, 5432)).
+administrator_action(
+    refresh_package_cache,
+    ai_agent_t,
+    selinux_access(rpm_var_cache_t, dir, read)
+).
+administrator_action(
+    edit_service_unit,
+    ai_agent_t,
+    selinux_access(systemd_unit_file_t, file, write)
+).
 administrator_action(create_namespace, ai_agent_t, syscall(clone3)).
 administrator_action(load_bpf_program, ai_agent_t, syscall(bpf)).
 administrator_action(run_small_worker_pool, ai_agent_t, resource(pids, 32, count)).
 administrator_action(exceed_pids_limit, ai_agent_t, resource(pids, 65, count)).
 administrator_action(allocate_large_memory, ai_agent_t, resource(memory, 1024, mebibytes)).
+administrator_action(launch_vm_guest, ai_agent_t, resource(pids, 128, count)).
 
 administrator_service_action(
     restart_loop_risk,
@@ -179,6 +190,8 @@ file_context('/usr/local/bin/ai-agentd', ai_agent_exec_t, file).
 file_context('/usr/local/bin/log-shipper', log_shipper_exec_t, file).
 file_context('/home/alice/public_html/index.html', user_home_t, file).
 file_context('/srv/secret/report.txt', secret_doc_t, file).
+file_context('/var/cache/dnf', rpm_var_cache_t, dir).
+file_context('/etc/systemd/system/ai-agent.service', systemd_unit_file_t, file).
 
 port_context(80, http_port_t, tcp).
 port_context(5432, postgresql_port_t, tcp).
@@ -470,6 +483,22 @@ fact_source(
     source{tool: local_action_profile, artifact: 'toy_admin_actions', selector: 'connect_database requires tcp/5432 name_connect'}
 ).
 fact_source(
+    administrator_action(
+        refresh_package_cache,
+        ai_agent_t,
+        selinux_access(rpm_var_cache_t, dir, read)
+    ),
+    source{tool: local_action_profile, artifact: 'toy_admin_actions', selector: 'refresh_package_cache requires rpm_var_cache_t:dir read'}
+).
+fact_source(
+    administrator_action(
+        edit_service_unit,
+        ai_agent_t,
+        selinux_access(systemd_unit_file_t, file, write)
+    ),
+    source{tool: local_action_profile, artifact: 'toy_admin_actions', selector: 'edit_service_unit requires systemd_unit_file_t:file write'}
+).
+fact_source(
     administrator_action(create_namespace, ai_agent_t, syscall(clone3)),
     source{tool: local_action_profile, artifact: 'toy_admin_actions', selector: 'create_namespace requires clone3'}
 ).
@@ -488,6 +517,10 @@ fact_source(
 fact_source(
     administrator_action(allocate_large_memory, ai_agent_t, resource(memory, 1024, mebibytes)),
     source{tool: local_action_profile, artifact: 'toy_admin_actions', selector: 'allocate_large_memory crosses memory.max'}
+).
+fact_source(
+    administrator_action(launch_vm_guest, ai_agent_t, resource(pids, 128, count)),
+    source{tool: local_action_profile, artifact: 'toy_admin_actions', selector: 'launch_vm_guest crosses pids.max'}
 ).
 fact_source(
     administrator_service_action(
@@ -631,6 +664,14 @@ fact_source(
 fact_source(
     file_context('/srv/secret/report.txt', secret_doc_t, file),
     source{tool: matchpathcon, artifact: 'toy_file_contexts', selector: '/srv/secret/report.txt'}
+).
+fact_source(
+    file_context('/var/cache/dnf', rpm_var_cache_t, dir),
+    source{tool: matchpathcon, artifact: 'toy_file_contexts', selector: '/var/cache/dnf'}
+).
+fact_source(
+    file_context('/etc/systemd/system/ai-agent.service', systemd_unit_file_t, file),
+    source{tool: matchpathcon, artifact: 'toy_file_contexts', selector: '/etc/systemd/system/ai-agent.service'}
 ).
 
 fact_source(

@@ -11,9 +11,12 @@ Use these as structured facts for OmegaClaw MeTTa/NAL reasoning experiments.
 - `(administrator-action connect_database ai_agent_t (name_connect tcp 5432))`
 - `(administrator-action connect_web_api ai_agent_t (name_connect tcp 80))`
 - `(administrator-action create_namespace ai_agent_t (syscall clone3))`
+- `(administrator-action edit_service_unit ai_agent_t (selinux_access systemd_unit_file_t file write))`
 - `(administrator-action exceed_pids_limit ai_agent_t (resource pids 65 count))`
+- `(administrator-action launch_vm_guest ai_agent_t (resource pids 128 count))`
 - `(administrator-action load_bpf_program ai_agent_t (syscall bpf))`
 - `(administrator-action read_credential_store ai_agent_t (selinux_access shadow_t file read))`
+- `(administrator-action refresh_package_cache ai_agent_t (selinux_access rpm_var_cache_t dir read))`
 - `(administrator-action run_small_worker_pool ai_agent_t (resource pids 32 count))`
 - `(administrator-service-action restart_loop_risk ai_agent_service (restart_policy always))`
 - `(administrator-service-action restart_loop_risk log_shipper_service (restart_policy on_failure))`
@@ -92,11 +95,13 @@ Use these as structured facts for OmegaClaw MeTTa/NAL reasoning experiments.
 - `(constraint-denies sandbox_secret_parent_t secret_doc_t file read parent_mls_range_mismatch)`
 - `(constraint-denies user_t secret_doc_t file read mls_range_mismatch)`
 - `(file-context "/etc/shadow" shadow_t file)`
+- `(file-context "/etc/systemd/system/ai-agent.service" systemd_unit_file_t file)`
 - `(file-context "/home/alice/public_html/index.html" user_home_t file)`
 - `(file-context "/srv/secret/report.txt" secret_doc_t file)`
 - `(file-context "/usr/local/bin/ai-agentd" ai_agent_exec_t file)`
 - `(file-context "/usr/local/bin/log-shipper" log_shipper_exec_t file)`
 - `(file-context "/usr/sbin/exampled" daemon_exec_t file)`
+- `(file-context "/var/cache/dnf" rpm_var_cache_t dir)`
 - `(file-context "/var/log/httpd/access.log" httpd_log_t file)`
 - `(file-context "/var/www/cgi-bin/admin.cgi" httpd_sys_script_exec_t file)`
 - `(file-context "/var/www/html/index.html" httpd_sys_content_t file)`
@@ -168,6 +173,9 @@ metta (|- ((==> (allow ai_agent_t self process dyntransition) ai_agent_has_dyntr
 metta (|- ((==> (firewall-egress-rule ai_agent_t tcp 5432 deny database_egress_block) ai_agent_database_egress_blocked) (stv 1.0 0.95)) ((firewall-egress-rule ai_agent_t tcp 5432 deny database_egress_block) (stv 1.0 0.95)))
 metta (|- ((==> (seccomp-rule ai_agent_restricted clone3 deny no_unprivileged_namespace_creation) ai_agent_clone3_blocked_by_seccomp) (stv 1.0 0.95)) ((seccomp-rule ai_agent_restricted clone3 deny no_unprivileged_namespace_creation) (stv 1.0 0.95)))
 metta (|- ((==> (cgroup-limit ai_agent_slice pids 64 count pids_max_64) ai_agent_pids_limited_by_cgroup) (stv 1.0 0.95)) ((cgroup-limit ai_agent_slice pids 64 count pids_max_64) (stv 1.0 0.95)))
+metta (|- ((==> (administrator-action refresh_package_cache ai_agent_t (selinux_access rpm_var_cache_t dir read)) admin_action_refresh_package_cache_selinux_denied) (stv 1.0 0.95)) ((administrator-action refresh_package_cache ai_agent_t (selinux_access rpm_var_cache_t dir read)) (stv 1.0 0.95)))
+metta (|- ((==> (administrator-action edit_service_unit ai_agent_t (selinux_access systemd_unit_file_t file write)) admin_action_edit_service_unit_selinux_denied) (stv 1.0 0.95)) ((administrator-action edit_service_unit ai_agent_t (selinux_access systemd_unit_file_t file write)) (stv 1.0 0.95)))
+metta (|- ((==> (administrator-action launch_vm_guest ai_agent_t (resource pids 128 count)) admin_action_launch_vm_guest_pids_blocked) (stv 1.0 0.95)) ((administrator-action launch_vm_guest ai_agent_t (resource pids 128 count)) (stv 1.0 0.95)))
 metta (|- ((==> (login-mapping agent_service agent_u) agent_service_maps_to_sensitive_agent_domain) (stv 1.0 0.95)) ((login-mapping agent_service agent_u) (stv 1.0 0.95)))
 metta (|- ((==> (service-unit mislabelled_agent_service agent_service "/usr/local/bin/log-shipper" always) service_domain_mismatch_mislabelled_agent_service) (stv 1.0 0.95)) ((service-unit mislabelled_agent_service agent_service "/usr/local/bin/log-shipper" always) (stv 1.0 0.95)))
 ```

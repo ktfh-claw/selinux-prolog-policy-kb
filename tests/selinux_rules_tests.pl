@@ -358,6 +358,20 @@ test(admin_action_blocks_credential_store_read_by_selinux) :-
         selinux_denied(shadow_t, file, read)
     )).
 
+test(admin_action_blocks_package_cache_read_by_selinux) :-
+    once(admin_action_blocked(
+        refresh_package_cache,
+        ai_agent_t,
+        selinux_denied(rpm_var_cache_t, dir, read)
+    )).
+
+test(admin_action_blocks_service_unit_write_by_selinux) :-
+    once(admin_action_blocked(
+        edit_service_unit,
+        ai_agent_t,
+        selinux_denied(systemd_unit_file_t, file, write)
+    )).
+
 test(admin_action_flags_credential_store_read_capability_risk) :-
     once(admin_action_risky(
         read_credential_store,
@@ -400,11 +414,25 @@ test(admin_action_blocks_large_memory_request) :-
         cgroup_blocked(memory, 1024, 512, mebibytes, memory_max_512m)
     )).
 
+test(admin_action_blocks_vm_launch_by_pids_limit) :-
+    once(admin_action_blocked(
+        launch_vm_guest,
+        ai_agent_t,
+        cgroup_blocked(pids, 128, 64, count, pids_max_64)
+    )).
+
 test(admin_action_flags_pids_limit_risk) :-
     once(admin_action_risky(
         exceed_pids_limit,
         ai_agent_t,
         cgroup_limit(pids, 65, count, pids_max_64)
+    )).
+
+test(admin_action_flags_vm_launch_pids_limit_risk) :-
+    once(admin_action_risky(
+        launch_vm_guest,
+        ai_agent_t,
+        cgroup_limit(pids, 128, count, pids_max_64)
     )).
 
 test(service_admin_action_flags_restart_always_loop_risk) :-
