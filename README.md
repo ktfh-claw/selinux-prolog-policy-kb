@@ -12,6 +12,8 @@ ideas with maintained SELinux tooling concepts such as SETools and
 The first model layer covers:
 
 - SELinux-shaped allow facts: `allow(Source, Target, Class, Permission)`
+- boolean-gated conditional allows: `boolean_state(Boolean, State)` and
+  `conditional_allow(Boolean, Source, Target, Class, Permission)`
 - type attributes: `has_attribute(Type, Attribute)`
 - file-context facts: `file_context(Path, Type, Class)`
 - domain transition facts: `type_transition(Source, Entrypoint, Target)`

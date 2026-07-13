@@ -16,7 +16,12 @@ Use these as structured facts for OmegaClaw MeTTa/NAL reasoning experiments.
 - `(audit-finding high_risk_policy_regression (class file) (permission read) (policy_version policy_v2) (source httpd_t) (target shadow_t))`
 - `(audit-finding risky_executable_content_path (path "/var/www/cgi-bin/admin.cgi") (reason write_executable_content) (source httpd_t))`
 - `(audit-finding risky_web_shell_path (reason write_executable_content) (source httpd_t) (target httpd_sys_script_exec_t))`
+- `(boolean-state httpd_can_network_connect true)`
+- `(boolean-state httpd_enable_homedirs false)`
+- `(conditional-allow httpd_can_network_connect httpd_t http_port_t tcp_socket name_connect)`
+- `(conditional-allow httpd_enable_homedirs httpd_t user_home_t file read)`
 - `(file-context "/etc/shadow" shadow_t file)`
+- `(file-context "/home/alice/public_html/index.html" user_home_t file)`
 - `(file-context "/usr/sbin/exampled" daemon_exec_t file)`
 - `(file-context "/var/log/httpd/access.log" httpd_log_t file)`
 - `(file-context "/var/www/cgi-bin/admin.cgi" httpd_sys_script_exec_t file)`
@@ -52,4 +57,4 @@ The useful result is not that the toy facts are realistic; it is whether OmegaCl
 
 ## Soundness Boundary
 
-This fixture does not model SELinux conditionals, constraints, MLS/MCS, roles, users, type bounds, DAC, capabilities, seccomp, namespaces, cgroups, or firewall policy.
+This fixture models only simple boolean-gated conditionals. It does not model nested conditional expressions, constraints, MLS/MCS, roles, users, type bounds, DAC, capabilities, seccomp, namespaces, cgroups, or firewall policy.

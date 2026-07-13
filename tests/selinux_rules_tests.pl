@@ -3,22 +3,31 @@
 :- use_module('../src/selinux_rules').
 
 test(direct_allow_read_web_content) :-
-    can_access(httpd_t, httpd_sys_content_t, file, read).
+    once(can_access(httpd_t, httpd_sys_content_t, file, read)).
 
 test(negative_write_web_content, [fail]) :-
     can_access(httpd_t, httpd_sys_content_t, file, write).
+
+test(effective_allow_from_enabled_boolean) :-
+    once(can_access(httpd_t, http_port_t, tcp_socket, name_connect)).
+
+test(disabled_conditional_is_not_effective, [fail]) :-
+    can_access(httpd_t, user_home_t, file, read).
 
 test(derived_read_web_content) :-
     can_read_web_content(httpd_t).
 
 test(path_read_web_content) :-
-    can_access_path(httpd_t, '/var/www/html/index.html', file, read).
+    once(can_access_path(httpd_t, '/var/www/html/index.html', file, read)).
 
 test(path_read_helper) :-
-    can_read_path(httpd_t, '/var/www/cgi-bin/admin.cgi').
+    once(can_read_path(httpd_t, '/var/www/cgi-bin/admin.cgi')).
 
 test(negative_path_write_static_content, [fail]) :-
     can_access_path(httpd_t, '/var/www/html/index.html', file, write).
+
+test(disabled_conditional_path_read, [fail]) :-
+    can_access_path(httpd_t, '/home/alice/public_html/index.html', file, read).
 
 test(risky_web_shell_path) :-
     once(risky_web_shell_path(

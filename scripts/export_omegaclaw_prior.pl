@@ -74,5 +74,5 @@ boundary_lines([
     '',
     '## Soundness Boundary',
     '',
-    'This fixture does not model SELinux conditionals, constraints, MLS/MCS, roles, users, type bounds, DAC, capabilities, seccomp, namespaces, cgroups, or firewall policy.'
+    'This fixture models only simple boolean-gated conditionals. It does not model nested conditional expressions, constraints, MLS/MCS, roles, users, type bounds, DAC, capabilities, seccomp, namespaces, cgroups, or firewall policy.'
 ]).

@@ -18,6 +18,12 @@ metta_line(Line) :-
     allow(Source, Target, Class, Permission),
     sexpr_line([allow, Source, Target, Class, Permission], Line).
 metta_line(Line) :-
+    boolean_state(Boolean, State),
+    sexpr_line(['boolean-state', Boolean, State], Line).
+metta_line(Line) :-
+    conditional_allow(Boolean, Source, Target, Class, Permission),
+    sexpr_line(['conditional-allow', Boolean, Source, Target, Class, Permission], Line).
+metta_line(Line) :-
     has_attribute(Type, Attribute),
     sexpr_line(['has-attribute', Type, Attribute], Line).
 metta_line(Line) :-

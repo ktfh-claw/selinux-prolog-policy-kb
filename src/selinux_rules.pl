@@ -1,4 +1,5 @@
 :- module(selinux_rules, [
+    effective_allow/4,
     can_access/4,
     can_access_path/4,
     can_read_web_content/1,
@@ -15,12 +16,18 @@
 
 :- use_module(selinux_facts).
 
-can_access(Source, Target, Class, Permission) :-
+effective_allow(Source, Target, Class, Permission) :-
     allow(Source, Target, Class, Permission).
+effective_allow(Source, Target, Class, Permission) :-
+    conditional_allow(Boolean, Source, Target, Class, Permission),
+    boolean_state(Boolean, true).
+
+can_access(Source, Target, Class, Permission) :-
+    effective_allow(Source, Target, Class, Permission).
 
 can_access_path(Source, Path, Class, Permission) :-
     file_context(Path, Target, Class),
-    allow(Source, Target, Class, Permission).
+    effective_allow(Source, Target, Class, Permission).
 
 can_read_web_content(Source) :-
     allow(Source, httpd_sys_content_t, file, read).

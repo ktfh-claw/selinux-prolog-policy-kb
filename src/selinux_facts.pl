@@ -1,5 +1,7 @@
 :- module(selinux_facts, [
     allow/4,
+    boolean_state/2,
+    conditional_allow/5,
     has_attribute/2,
     type_transition/3,
     new_allow/5,
@@ -16,6 +18,12 @@ allow(httpd_t, httpd_sys_script_exec_t, file, read).
 allow(init_t, daemon_exec_t, file, entrypoint).
 allow(init_t, daemon_t, process, transition).
 
+boolean_state(httpd_can_network_connect, true).
+boolean_state(httpd_enable_homedirs, false).
+
+conditional_allow(httpd_can_network_connect, httpd_t, http_port_t, tcp_socket, name_connect).
+conditional_allow(httpd_enable_homedirs, httpd_t, user_home_t, file, read).
+
 has_attribute(httpd_t, webserver_domain).
 has_attribute(httpd_sys_script_exec_t, executable_content).
 has_attribute(shadow_t, credential_store).
@@ -31,6 +39,7 @@ file_context('/var/www/cgi-bin/admin.cgi', httpd_sys_script_exec_t, file).
 file_context('/var/log/httpd/access.log', httpd_log_t, file).
 file_context('/etc/shadow', shadow_t, file).
 file_context('/usr/sbin/exampled', daemon_exec_t, file).
+file_context('/home/alice/public_html/index.html', user_home_t, file).
 
 fact_source(
     allow(httpd_t, httpd_sys_content_t, file, read),
@@ -55,6 +64,24 @@ fact_source(
 fact_source(
     allow(init_t, daemon_t, process, transition),
     source{tool: setools, artifact: 'toy_policy.allow', selector: 'allow init_t daemon_t:process transition'}
+).
+
+fact_source(
+    boolean_state(httpd_can_network_connect, true),
+    source{tool: sepolicy, artifact: 'toy_booleans', selector: 'httpd_can_network_connect --> on'}
+).
+fact_source(
+    boolean_state(httpd_enable_homedirs, false),
+    source{tool: sepolicy, artifact: 'toy_booleans', selector: 'httpd_enable_homedirs --> off'}
+).
+
+fact_source(
+    conditional_allow(httpd_can_network_connect, httpd_t, http_port_t, tcp_socket, name_connect),
+    source{tool: setools, artifact: 'toy_policy.conditional_allow', selector: 'if httpd_can_network_connect allow httpd_t http_port_t:tcp_socket name_connect'}
+).
+fact_source(
+    conditional_allow(httpd_enable_homedirs, httpd_t, user_home_t, file, read),
+    source{tool: setools, artifact: 'toy_policy.conditional_allow', selector: 'if httpd_enable_homedirs allow httpd_t user_home_t:file read'}
 ).
 
 fact_source(
@@ -107,4 +134,8 @@ fact_source(
 fact_source(
     file_context('/usr/sbin/exampled', daemon_exec_t, file),
     source{tool: matchpathcon, artifact: 'toy_file_contexts', selector: '/usr/sbin/exampled'}
+).
+fact_source(
+    file_context('/home/alice/public_html/index.html', user_home_t, file),
+    source{tool: matchpathcon, artifact: 'toy_file_contexts', selector: '/home/alice/public_html/index.html'}
 ).

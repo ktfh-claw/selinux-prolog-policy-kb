@@ -6,6 +6,8 @@ The model starts with a small subset of SELinux concepts that map cleanly from
 SETools-style policy analysis output:
 
 - `allow(Source, Target, Class, Permission)`
+- `boolean_state(Boolean, State)`
+- `conditional_allow(Boolean, Source, Target, Class, Permission)`
 - `has_attribute(Type, Attribute)`
 - `type_transition(Source, Entrypoint, Target)`
 - `new_allow(PolicyVersion, Source, Target, Class, Permission)`
@@ -30,6 +32,11 @@ Derived predicates represent local audit questions:
 - `policy_regression_severity/6`
 - `audit_finding/2`
 - `audit_finding_with_evidence/2`
+
+`effective_allow/4` is the access primitive used by `can_access/4`. It includes
+unconditional `allow/4` facts plus `conditional_allow/5` facts whose controlling
+`boolean_state/2` is `true`. Disabled boolean-gated allows are kept as imported
+facts but do not become effective access.
 
 `fixtures/omegaclaw_knowledge_prior.md` is generated from the MeTTa export and
 adds a small set of OmegaClaw `metta` commands for the first import/read
@@ -62,7 +69,7 @@ The model is sound only relative to the facts provided and the local rules in
 
 It does not yet model:
 
-- conditionals and booleans
+- nested conditional expressions beyond one controlling boolean
 - constraints and MLS/MCS labels
 - type bounds
 - role/user mappings

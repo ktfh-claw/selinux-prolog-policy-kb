@@ -29,6 +29,20 @@ test(omegaclaw_prior_contains_path_and_severity_baselines) :-
         _,
         _,
         _,
+        '(boolean-state httpd_can_network_connect true)'
+    )),
+    once(sub_string(
+        Text,
+        _,
+        _,
+        _,
+        '(conditional-allow httpd_enable_homedirs httpd_t user_home_t file read)'
+    )),
+    once(sub_string(
+        Text,
+        _,
+        _,
+        _,
         '(file-context "/var/www/cgi-bin/admin.cgi" httpd_sys_script_exec_t file)'
     )),
     once(sub_string(
