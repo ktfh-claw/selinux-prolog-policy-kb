@@ -47,8 +47,8 @@ The first model layer covers:
   range-blocked reads, sensitive capability and process-permission grants for
   AI-agent domains, mapped logins, and service units, runtime network and
   syscall block checks, runtime cgroup resource-limit checks, service-domain
-  mismatch checks, action-level allowed/blocked/risky administrator checks,
-  high-risk policy regressions, and
+  mismatch checks, action-level allowed/blocked/risky/conflict administrator
+  checks, service-action blocked/risky checks, high-risk policy regressions, and
   severity classification for policy diffs and findings with structured
   evidence
 

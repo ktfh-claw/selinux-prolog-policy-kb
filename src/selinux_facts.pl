@@ -137,6 +137,11 @@ administrator_service_action(
     log_shipper_service,
     restart_policy(on_failure)
 ).
+administrator_service_action(
+    restart_loop_risk,
+    mislabelled_agent_service,
+    restart_policy(always)
+).
 
 login_mapping(alice, user_u).
 login_mapping(agent_service, agent_u).
@@ -489,6 +494,14 @@ fact_source(
         restart_policy(on_failure)
     ),
     source{tool: local_action_profile, artifact: 'toy_admin_actions', selector: 'restart_loop_risk baseline negative for Restart=on-failure'}
+).
+fact_source(
+    administrator_service_action(
+        restart_loop_risk,
+        mislabelled_agent_service,
+        restart_policy(always)
+    ),
+    source{tool: local_action_profile, artifact: 'toy_admin_actions', selector: 'restart_loop_risk blocked by service domain mismatch'}
 ).
 
 fact_source(

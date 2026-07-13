@@ -304,6 +304,24 @@ test(admin_action_database_connect_not_runtime_allowed, [fail]) :-
         name_connect(tcp, 5432, _Reason)
     ).
 
+test(admin_action_policy_conflict_database_egress) :-
+    once(admin_action_policy_conflict(
+        connect_database,
+        ai_agent_t,
+        network_selinux_allowed_runtime_blocked(
+            tcp,
+            5432,
+            database_egress_block
+        )
+    )).
+
+test(admin_action_policy_conflict_ignores_runtime_allowed_web, [fail]) :-
+    admin_action_policy_conflict(
+        connect_web_api,
+        ai_agent_t,
+        network_selinux_allowed_runtime_blocked(tcp, 80, _Reason)
+    ).
+
 test(admin_action_blocks_credential_store_read_by_selinux) :-
     once(admin_action_blocked(
         read_credential_store,
@@ -352,6 +370,22 @@ test(service_admin_action_ignores_on_failure_restart_policy, [fail]) :-
         restart_loop_risk,
         log_shipper_service,
         log_shipper_t,
+        restart_policy(always)
+    ).
+
+test(service_admin_action_blocks_domain_mismatch) :-
+    once(service_admin_action_blocked(
+        restart_loop_risk,
+        mislabelled_agent_service,
+        ai_agent_t,
+        service_domain_mismatch(log_shipper_t)
+    )).
+
+test(service_admin_action_risky_requires_resolved_agent_domain, [fail]) :-
+    service_admin_action_risky(
+        restart_loop_risk,
+        mislabelled_agent_service,
+        ai_agent_t,
         restart_policy(always)
     ).
 
@@ -567,6 +601,30 @@ test(audit_finding_service_domain_mismatch_shape) :-
             service: mislabelled_agent_service,
             expected_domain: ai_agent_t,
             transition_domain: log_shipper_t
+        }
+    )).
+
+test(audit_finding_admin_action_policy_conflict_shape) :-
+    once(audit_finding(
+        admin_action_policy_conflict,
+        finding{
+            action: connect_database,
+            source: ai_agent_t,
+            protocol: tcp,
+            port: 5432,
+            reason: database_egress_block
+        }
+    )).
+
+test(audit_finding_service_admin_action_blocked_shape) :-
+    once(audit_finding(
+        service_admin_action_blocked,
+        finding{
+            action: restart_loop_risk,
+            service: mislabelled_agent_service,
+            expected_domain: ai_agent_t,
+            transition_domain: log_shipper_t,
+            reason: service_domain_mismatch
         }
     )).
 
@@ -786,6 +844,44 @@ test(audit_finding_service_domain_mismatch_evidence) :-
     once(audit_finding_with_evidence(service_domain_mismatch, Finding)),
     assertion(Finding.service == mislabelled_agent_service),
     assertion(Finding.evidence = [
+        service_unit(
+            mislabelled_agent_service,
+            agent_service,
+            '/usr/local/bin/log-shipper',
+            always
+        )-_,
+        login_mapping(agent_service, agent_u)-_,
+        selinux_user_role(agent_u, agent_r)-_,
+        role_type(agent_r, ai_agent_t)-_,
+        file_context('/usr/local/bin/log-shipper', log_shipper_exec_t, file)-_,
+        type_transition(init_t, log_shipper_exec_t, log_shipper_t)-_
+    ]).
+
+test(audit_finding_admin_action_policy_conflict_evidence) :-
+    once(audit_finding_with_evidence(
+        admin_action_policy_conflict,
+        Finding
+    )),
+    assertion(Finding.action == connect_database),
+    assertion(Finding.evidence = [
+        administrator_action(connect_database, ai_agent_t, name_connect(tcp, 5432))-_,
+        port_context(5432, postgresql_port_t, tcp)-_,
+        allow(ai_agent_t, postgresql_port_t, tcp_socket, name_connect)-_,
+        firewall_egress_rule(ai_agent_t, tcp, 5432, deny, database_egress_block)-_
+    ]).
+
+test(audit_finding_service_admin_action_blocked_evidence) :-
+    once(audit_finding_with_evidence(
+        service_admin_action_blocked,
+        Finding
+    )),
+    assertion(Finding.service == mislabelled_agent_service),
+    assertion(Finding.evidence = [
+        administrator_service_action(
+            restart_loop_risk,
+            mislabelled_agent_service,
+            restart_policy(always)
+        )-_,
         service_unit(
             mislabelled_agent_service,
             agent_service,

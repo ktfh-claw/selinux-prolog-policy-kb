@@ -71,7 +71,9 @@ Derived predicates represent local audit questions:
 - `service_ai_agent_resource_limit/6`
 - `admin_action_allowed/3`
 - `admin_action_blocked/3`
+- `admin_action_policy_conflict/3`
 - `admin_action_risky/3`
+- `service_admin_action_blocked/4`
 - `service_admin_action_risky/4`
 - `risky_web_shell_path/3`
 - `risky_executable_content_path/3`
@@ -180,8 +182,13 @@ seccomp, and cgroup checks after the unit domain is resolved.
 AI-agent Linux administrator behaviors onto normalized primitives already in
 the model: SELinux access checks, port `name_connect`, seccomp syscalls,
 cgroup limits, and service restart policy. The `admin_action_allowed/3`,
-`admin_action_blocked/3`, and `admin_action_risky/3` predicates provide an
-action-level audit vocabulary without reimplementing those lower layers.
+`admin_action_blocked/3`, `admin_action_policy_conflict/3`, and
+`admin_action_risky/3` predicates provide an action-level audit vocabulary
+without reimplementing those lower layers. The conflict predicate catches cases
+where an action is allowed by SELinux but blocked by a runtime layer, such as a
+database egress action with `name_connect` permission and a deny firewall rule.
+`service_admin_action_blocked/4` catches service actions whose unit login maps
+to one domain while the entrypoint transition resolves to another.
 `service_admin_action_risky/4` currently covers the narrow `Restart=always`
 loop-risk case for resolved AI-agent services.
 

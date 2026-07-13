@@ -33,7 +33,9 @@
     service_ai_agent_resource_limit/6,
     admin_action_allowed/3,
     admin_action_blocked/3,
+    admin_action_policy_conflict/3,
     admin_action_risky/3,
+    service_admin_action_blocked/4,
     service_admin_action_risky/4,
     risky_web_shell_path/3,
     risky_executable_content_path/3,
@@ -236,12 +238,30 @@ admin_action_blocked(Action, Source, seccomp_blocked(Syscall, Reason)) :-
     administrator_action(Action, Source, syscall(Syscall)),
     runtime_syscall_blocked(Source, Syscall, Reason).
 
+admin_action_policy_conflict(
+    Action,
+    Source,
+    network_selinux_allowed_runtime_blocked(Protocol, Port, Reason)
+) :-
+    administrator_action(Action, Source, name_connect(Protocol, Port)),
+    can_name_connect_port(Source, Protocol, Port),
+    runtime_name_connect_blocked(Source, Protocol, Port, Reason).
+
 admin_action_risky(Action, Source, selinux_capability(Capability, Reason)) :-
     administrator_action(Action, Source, _Primitive),
     ai_agent_sensitive_capability(Source, Capability, Reason).
 admin_action_risky(Action, Source, cgroup_limit(Resource, Value, Unit, Reason)) :-
     administrator_action(Action, Source, resource(Resource, Value, Unit)),
     runtime_resource_limited(Source, Resource, Value, Unit, Reason).
+
+service_admin_action_blocked(
+    Action,
+    Service,
+    ExpectedDomain,
+    service_domain_mismatch(TransitionDomain)
+) :-
+    administrator_service_action(Action, Service, _Primitive),
+    service_domain_mismatch(Service, ExpectedDomain, TransitionDomain).
 
 service_admin_action_risky(Action, Service, Domain, restart_policy(always)) :-
     administrator_service_action(Action, Service, restart_policy(always)),
@@ -426,6 +446,33 @@ audit_finding(service_domain_mismatch, finding{
     transition_domain: TransitionDomain
 }) :-
     service_domain_mismatch(Service, ExpectedDomain, TransitionDomain).
+
+audit_finding(admin_action_policy_conflict, finding{
+    action: Action,
+    source: Source,
+    protocol: Protocol,
+    port: Port,
+    reason: Reason
+}) :-
+    admin_action_policy_conflict(
+        Action,
+        Source,
+        network_selinux_allowed_runtime_blocked(Protocol, Port, Reason)
+    ).
+
+audit_finding(service_admin_action_blocked, finding{
+    action: Action,
+    service: Service,
+    expected_domain: ExpectedDomain,
+    transition_domain: TransitionDomain,
+    reason: service_domain_mismatch
+}) :-
+    service_admin_action_blocked(
+        Action,
+        Service,
+        ExpectedDomain,
+        service_domain_mismatch(TransitionDomain)
+    ).
 
 audit_finding(service_ai_agent_network_exposure, finding{
     service: Service,
@@ -734,6 +781,66 @@ audit_evidence(service_domain_mismatch, Finding, Evidence) :-
         file_context(EntrypointPath, EntrypointType, file)-FileContextSource,
         type_transition(init_t, EntrypointType, TransitionDomain)-TransitionSource
     ],
+    fact_source(
+        service_unit(Service, Login, EntrypointPath, RestartPolicy),
+        ServiceSource
+    ),
+    fact_source(login_mapping(Login, SelinuxUser), LoginSource),
+    fact_source(selinux_user_role(SelinuxUser, Role), UserRoleSource),
+    fact_source(role_type(Role, ExpectedDomain), RoleTypeSource),
+    fact_source(file_context(EntrypointPath, EntrypointType, file), FileContextSource),
+    fact_source(
+        type_transition(init_t, EntrypointType, TransitionDomain),
+        TransitionSource
+    ).
+
+audit_evidence(admin_action_policy_conflict, Finding, Evidence) :-
+    Action = Finding.action,
+    Source = Finding.source,
+    Protocol = Finding.protocol,
+    Port = Finding.port,
+    Reason = Finding.reason,
+    port_context(Port, PortType, Protocol),
+    socket_class_for_protocol(Protocol, SocketClass),
+    Evidence = [
+        administrator_action(Action, Source, name_connect(Protocol, Port))-ActionSource,
+        port_context(Port, PortType, Protocol)-PortContextSource,
+        allow(Source, PortType, SocketClass, name_connect)-AllowSource,
+        firewall_egress_rule(Source, Protocol, Port, deny, Reason)-FirewallSource
+    ],
+    fact_source(
+        administrator_action(Action, Source, name_connect(Protocol, Port)),
+        ActionSource
+    ),
+    fact_source(port_context(Port, PortType, Protocol), PortContextSource),
+    fact_source(allow(Source, PortType, SocketClass, name_connect), AllowSource),
+    fact_source(
+        firewall_egress_rule(Source, Protocol, Port, deny, Reason),
+        FirewallSource
+    ).
+
+audit_evidence(service_admin_action_blocked, Finding, Evidence) :-
+    Action = Finding.action,
+    Service = Finding.service,
+    ExpectedDomain = Finding.expected_domain,
+    TransitionDomain = Finding.transition_domain,
+    service_unit(Service, Login, EntrypointPath, RestartPolicy),
+    login_mapping(Login, SelinuxUser),
+    selinux_user_role(SelinuxUser, Role),
+    file_context(EntrypointPath, EntrypointType, file),
+    Evidence = [
+        administrator_service_action(Action, Service, restart_policy(RestartPolicy))-ActionSource,
+        service_unit(Service, Login, EntrypointPath, RestartPolicy)-ServiceSource,
+        login_mapping(Login, SelinuxUser)-LoginSource,
+        selinux_user_role(SelinuxUser, Role)-UserRoleSource,
+        role_type(Role, ExpectedDomain)-RoleTypeSource,
+        file_context(EntrypointPath, EntrypointType, file)-FileContextSource,
+        type_transition(init_t, EntrypointType, TransitionDomain)-TransitionSource
+    ],
+    fact_source(
+        administrator_service_action(Action, Service, restart_policy(RestartPolicy)),
+        ActionSource
+    ),
     fact_source(
         service_unit(Service, Login, EntrypointPath, RestartPolicy),
         ServiceSource

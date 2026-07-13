@@ -50,6 +50,13 @@ test(omegaclaw_prior_contains_path_and_severity_baselines) :-
         _,
         _,
         _,
+        '(administrator-service-action restart_loop_risk mislabelled_agent_service (restart_policy always))'
+    )),
+    once(sub_string(
+        Text,
+        _,
+        _,
+        _,
         '(allow ai_agent_t self capability dac_override)'
     )),
     once(sub_string(
@@ -191,6 +198,20 @@ test(omegaclaw_prior_contains_path_and_severity_baselines) :-
         _,
         _,
         '(policy-regression-severity policy_v2 httpd_t shadow_t file read critical)'
+    )),
+    once(sub_string(
+        Text,
+        _,
+        _,
+        _,
+        '(audit-finding admin_action_policy_conflict (action connect_database) (port 5432) (protocol tcp) (reason database_egress_block) (source ai_agent_t))'
+    )),
+    once(sub_string(
+        Text,
+        _,
+        _,
+        _,
+        '(audit-finding service_admin_action_blocked (action restart_loop_risk) (expected_domain ai_agent_t) (reason service_domain_mismatch) (service mislabelled_agent_service) (transition_domain log_shipper_t))'
     )),
     once(sub_string(
         Text,

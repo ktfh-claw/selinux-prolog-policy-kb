@@ -15,6 +15,7 @@ Use these as structured facts for OmegaClaw MeTTa/NAL reasoning experiments.
 - `(administrator-action read_credential_store ai_agent_t (selinux_access shadow_t file read))`
 - `(administrator-service-action restart_loop_risk ai_agent_service (restart_policy always))`
 - `(administrator-service-action restart_loop_risk log_shipper_service (restart_policy on_failure))`
+- `(administrator-service-action restart_loop_risk mislabelled_agent_service (restart_policy always))`
 - `(allow ai_agent_t http_port_t tcp_socket name_connect)`
 - `(allow ai_agent_t postgresql_port_t tcp_socket name_connect)`
 - `(allow ai_agent_t self capability dac_override)`
@@ -41,6 +42,7 @@ Use these as structured facts for OmegaClaw MeTTa/NAL reasoning experiments.
 - `(allow sandbox_web_t httpd_log_t file append)`
 - `(allow sandbox_web_t httpd_sys_content_t file read)`
 - `(allow user_t secret_doc_t file read)`
+- `(audit-finding admin_action_policy_conflict (action connect_database) (port 5432) (protocol tcp) (reason database_egress_block) (source ai_agent_t))`
 - `(audit-finding ai_agent_network_exposure (port 80) (protocol tcp) (reason web_api_baseline) (source ai_agent_t))`
 - `(audit-finding ai_agent_resource_limit (reason memory_max_512m) (resource memory) (source ai_agent_t) (unit mebibytes) (value 512))`
 - `(audit-finding ai_agent_resource_limit (reason pids_max_64) (resource pids) (source ai_agent_t) (unit count) (value 64))`
@@ -67,6 +69,7 @@ Use these as structured facts for OmegaClaw MeTTa/NAL reasoning experiments.
 - `(audit-finding runtime_resource_limit (reason pids_max_64) (resource pids) (source ai_agent_t) (unit count) (value 64))`
 - `(audit-finding runtime_syscall_block (reason block_kernel_observability) (source ai_agent_t) (syscall bpf))`
 - `(audit-finding runtime_syscall_block (reason no_unprivileged_namespace_creation) (source ai_agent_t) (syscall clone3))`
+- `(audit-finding service_admin_action_blocked (action restart_loop_risk) (expected_domain ai_agent_t) (reason service_domain_mismatch) (service mislabelled_agent_service) (transition_domain log_shipper_t))`
 - `(audit-finding service_ai_agent_network_exposure (domain ai_agent_t) (port 80) (protocol tcp) (reason web_api_baseline) (service ai_agent_service))`
 - `(audit-finding service_ai_agent_resource_limit (domain ai_agent_t) (reason memory_max_512m) (resource memory) (service ai_agent_service) (unit mebibytes) (value 512))`
 - `(audit-finding service_ai_agent_resource_limit (domain ai_agent_t) (reason pids_max_64) (resource pids) (service ai_agent_service) (unit count) (value 64))`
