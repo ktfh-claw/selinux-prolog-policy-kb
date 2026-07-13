@@ -26,6 +26,8 @@ The first model layer covers:
 
 - `src/selinux_facts.pl` - toy imported policy facts shaped like SETools output
 - `src/selinux_rules.pl` - reusable reasoning rules over imported facts
+- `scripts/export_metta.pl` - deterministic repo-local MeTTa-style export
+- `fixtures/selinux_policy.metta` - generated OmegaClaw/MeTTa-style fixture
 - `tests/selinux_rules_tests.pl` - executable Prolog tests
 - `docs/model.md` - modeling notes and soundness boundaries
 
@@ -33,6 +35,13 @@ The first model layer covers:
 
 ```bash
 swipl -q -g run_tests -t halt tests/selinux_rules_tests.pl
+swipl -q -g run_tests -t halt tests/metta_export_tests.pl
+```
+
+## Regenerate MeTTa Fixture
+
+```bash
+swipl -q -s scripts/export_metta.pl -g export_metta:export_metta -t halt > fixtures/selinux_policy.metta
 ```
 
 ## Boundary
