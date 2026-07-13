@@ -117,6 +117,26 @@ test(ai_agent_sensitive_capability_grant) :-
 test(non_sensitive_capability_is_not_flagged, [fail]) :-
     has_sensitive_capability(log_shipper_t, audit_write, _Reason).
 
+test(process_permission_allow_is_effective) :-
+    once(can_access(ai_agent_t, self, process, dyntransition)).
+
+test(sensitive_process_permission_grant) :-
+    once(has_sensitive_process_permission(
+        ai_agent_t,
+        dyntransition,
+        arbitrary_domain_transition
+    )).
+
+test(ai_agent_sensitive_process_permission_grant) :-
+    once(ai_agent_sensitive_process_permission(
+        ai_agent_t,
+        noatsecure,
+        unsafe_exec_environment
+    )).
+
+test(non_sensitive_process_permission_is_not_flagged, [fail]) :-
+    has_sensitive_process_permission(log_shipper_t, sigchld, _Reason).
+
 test(risky_web_shell_path) :-
     once(risky_web_shell_path(
         httpd_t,
@@ -224,6 +244,16 @@ test(audit_finding_ai_agent_capability_shape) :-
         }
     )).
 
+test(audit_finding_ai_agent_process_permission_shape) :-
+    once(audit_finding(
+        ai_agent_sensitive_process_permission,
+        finding{
+            source: ai_agent_t,
+            permission: dyntransition,
+            reason: arbitrary_domain_transition
+        }
+    )).
+
 test(audit_finding_web_shell_evidence) :-
     once(audit_finding_with_evidence(risky_web_shell_path, Finding)),
     assertion(Finding.source == httpd_t),
@@ -287,6 +317,21 @@ test(audit_finding_ai_agent_capability_evidence) :-
         allow(ai_agent_t, self, capability, dac_override)-_,
         has_attribute(ai_agent_t, ai_agent_domain)-_,
         sensitive_capability(dac_override, dac_bypass)-_
+    ]).
+
+test(audit_finding_ai_agent_process_permission_evidence) :-
+    once((
+        audit_finding_with_evidence(
+            ai_agent_sensitive_process_permission,
+            Finding
+        ),
+        Finding.permission == noatsecure
+    )),
+    assertion(Finding.permission == noatsecure),
+    assertion(Finding.evidence = [
+        allow(ai_agent_t, self, process, noatsecure)-_,
+        has_attribute(ai_agent_t, ai_agent_domain)-_,
+        sensitive_process_permission(noatsecure, unsafe_exec_environment)-_
     ]).
 
 :- end_tests(selinux_rules).

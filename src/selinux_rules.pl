@@ -12,6 +12,8 @@
     mls_read_blocked/3,
     has_sensitive_capability/3,
     ai_agent_sensitive_capability/3,
+    has_sensitive_process_permission/3,
+    ai_agent_sensitive_process_permission/3,
     risky_web_shell_path/3,
     risky_executable_content_path/3,
     can_domain_transition/3,
@@ -106,6 +108,14 @@ has_sensitive_capability(Source, Capability, Reason) :-
 ai_agent_sensitive_capability(Source, Capability, Reason) :-
     has_attribute(Source, ai_agent_domain),
     has_sensitive_capability(Source, Capability, Reason).
+
+has_sensitive_process_permission(Source, Permission, Reason) :-
+    effective_allow(Source, self, process, Permission),
+    sensitive_process_permission(Permission, Reason).
+
+ai_agent_sensitive_process_permission(Source, Permission, Reason) :-
+    has_attribute(Source, ai_agent_domain),
+    has_sensitive_process_permission(Source, Permission, Reason).
 
 risky_web_shell_path(Source, Target, write_executable_content) :-
     effective_allow(Source, Target, file, write),
@@ -206,6 +216,13 @@ audit_finding(ai_agent_sensitive_capability, finding{
     reason: Reason
 }) :-
     ai_agent_sensitive_capability(Source, Capability, Reason).
+
+audit_finding(ai_agent_sensitive_process_permission, finding{
+    source: Source,
+    permission: Permission,
+    reason: Reason
+}) :-
+    ai_agent_sensitive_process_permission(Source, Permission, Reason).
 
 audit_finding_with_evidence(Kind, FindingWithEvidence) :-
     audit_finding(Kind, Finding),
@@ -314,3 +331,16 @@ audit_evidence(ai_agent_sensitive_capability, Finding, Evidence) :-
     fact_source(allow(Source, self, capability, Capability), AllowSource),
     fact_source(has_attribute(Source, ai_agent_domain), AgentAttributeSource),
     fact_source(sensitive_capability(Capability, Reason), CapabilitySource).
+
+audit_evidence(ai_agent_sensitive_process_permission, Finding, Evidence) :-
+    Source = Finding.source,
+    Permission = Finding.permission,
+    Reason = Finding.reason,
+    Evidence = [
+        allow(Source, self, process, Permission)-AllowSource,
+        has_attribute(Source, ai_agent_domain)-AgentAttributeSource,
+        sensitive_process_permission(Permission, Reason)-PermissionSource
+    ],
+    fact_source(allow(Source, self, process, Permission), AllowSource),
+    fact_source(has_attribute(Source, ai_agent_domain), AgentAttributeSource),
+    fact_source(sensitive_process_permission(Permission, Reason), PermissionSource).

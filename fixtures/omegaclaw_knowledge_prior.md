@@ -9,6 +9,8 @@ Use these as structured facts for OmegaClaw MeTTa/NAL reasoning experiments.
 
 - `(allow ai_agent_t self capability dac_override)`
 - `(allow ai_agent_t self capability sys_admin)`
+- `(allow ai_agent_t self process dyntransition)`
+- `(allow ai_agent_t self process noatsecure)`
 - `(allow auditor_limited_t secret_doc_t file read)`
 - `(allow auditor_t secret_doc_t file read)`
 - `(allow httpd_t httpd_log_t file append)`
@@ -18,6 +20,7 @@ Use these as structured facts for OmegaClaw MeTTa/NAL reasoning experiments.
 - `(allow init_t daemon_exec_t file entrypoint)`
 - `(allow init_t daemon_t process transition)`
 - `(allow log_shipper_t self capability audit_write)`
+- `(allow log_shipper_t self process sigchld)`
 - `(allow sandbox_secret_parent_t secret_doc_t file read)`
 - `(allow sandbox_secret_reader_t secret_doc_t file read)`
 - `(allow sandbox_web_parent_t httpd_sys_content_t file read)`
@@ -26,6 +29,8 @@ Use these as structured facts for OmegaClaw MeTTa/NAL reasoning experiments.
 - `(allow user_t secret_doc_t file read)`
 - `(audit-finding ai_agent_sensitive_capability (capability dac_override) (reason dac_bypass) (source ai_agent_t))`
 - `(audit-finding ai_agent_sensitive_capability (capability sys_admin) (reason kernel_administration) (source ai_agent_t))`
+- `(audit-finding ai_agent_sensitive_process_permission (permission dyntransition) (reason arbitrary_domain_transition) (source ai_agent_t))`
+- `(audit-finding ai_agent_sensitive_process_permission (permission noatsecure) (reason unsafe_exec_environment) (source ai_agent_t))`
 - `(audit-finding constraint_blocked_allow (class file) (permission read) (reason mls_range_mismatch) (source user_t) (target secret_doc_t))`
 - `(audit-finding constraint_blocked_allow (class file) (permission read) (reason parent_mls_range_mismatch) (source sandbox_secret_parent_t) (target secret_doc_t))`
 - `(audit-finding high_risk_policy_regression (class file) (permission read) (policy_version policy_v2) (source httpd_t) (target shadow_t))`
@@ -66,6 +71,8 @@ Use these as structured facts for OmegaClaw MeTTa/NAL reasoning experiments.
 - `(port-context 80 http_port_t tcp)`
 - `(sensitive-capability dac_override dac_bypass)`
 - `(sensitive-capability sys_admin kernel_administration)`
+- `(sensitive-process-permission dyntransition arbitrary_domain_transition)`
+- `(sensitive-process-permission noatsecure unsafe_exec_environment)`
 - `(sensitivity-level s0 0)`
 - `(sensitivity-level s1 1)`
 - `(type-bound sandbox_secret_reader_t sandbox_secret_parent_t)`
@@ -87,6 +94,7 @@ metta (|- ((==> (constraint-denies user_t secret_doc_t file read mls_range_misma
 metta (|- ((==> (mls-range user_t s0 s0 (c0)) mls_blocked_secret_doc_read_for_user_t) (stv 1.0 0.95)) ((mls-range user_t s0 s0 (c0)) (stv 1.0 0.95)))
 metta (|- ((==> (port-context 80 http_port_t tcp) can_name_connect_http_port_80) (stv 1.0 0.95)) ((port-context 80 http_port_t tcp) (stv 1.0 0.95)))
 metta (|- ((==> (allow ai_agent_t self capability dac_override) ai_agent_has_dac_override) (stv 1.0 0.95)) ((allow ai_agent_t self capability dac_override) (stv 1.0 0.95)))
+metta (|- ((==> (allow ai_agent_t self process dyntransition) ai_agent_has_dyntransition) (stv 1.0 0.95)) ((allow ai_agent_t self process dyntransition) (stv 1.0 0.95)))
 ```
 
 ## Expected Use
@@ -96,4 +104,4 @@ The useful result is not that the toy facts are realistic; it is whether OmegaCl
 
 ## Soundness Boundary
 
-This fixture models only simple boolean-gated conditionals, explicit constraint-denial facts, resolved file and port contexts, type bounds, capability-class grants, and a narrow read-side MLS/MCS range check. It does not model nested conditional expressions, full SELinux constraint expressions, write-side MLS/MCS range algebra, roles, users, DAC outcome checks, seccomp, namespaces, cgroups, or firewall policy.
+This fixture models only simple boolean-gated conditionals, explicit constraint-denial facts, resolved file and port contexts, type bounds, capability/process-class grants, and a narrow read-side MLS/MCS range check. It does not model nested conditional expressions, full SELinux constraint expressions, write-side MLS/MCS range algebra, roles, users, DAC outcome checks, seccomp, namespaces, cgroups, or firewall policy.

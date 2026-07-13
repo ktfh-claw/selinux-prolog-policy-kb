@@ -13,6 +13,7 @@ SETools-style policy analysis output:
 - `mls_range(Entity, LowLevel, HighLevel, Categories)`
 - `type_bound(ChildType, ParentType)`
 - `sensitive_capability(Capability, Reason)`
+- `sensitive_process_permission(Permission, Reason)`
 - `has_attribute(Type, Attribute)`
 - `type_transition(Source, Entrypoint, Target)`
 - `new_allow(PolicyVersion, Source, Target, Class, Permission)`
@@ -38,6 +39,8 @@ Derived predicates represent local audit questions:
 - `mls_read_blocked/3`
 - `has_sensitive_capability/3`
 - `ai_agent_sensitive_capability/3`
+- `has_sensitive_process_permission/3`
+- `ai_agent_sensitive_process_permission/3`
 - `risky_web_shell_path/3`
 - `risky_executable_content_path/3`
 - `can_domain_transition/3`
@@ -79,6 +82,13 @@ not an imported SELinux primitive. `ai_agent_sensitive_capability/3` combines
 that rubric with `has_attribute(Source, ai_agent_domain)` so early AI-agent
 behavior checks can flag powerful Linux capability grants without claiming to
 model DAC outcomes or kernel capability semantics.
+
+SELinux process-class permissions are represented as ordinary `allow/4` facts
+such as `allow(ai_agent_t, self, process, dyntransition)`.
+`sensitive_process_permission/2` is a local rubric for permissions that can
+change process execution or domain-transition behavior. It currently flags
+`dyntransition` and `noatsecure` for AI-agent domains as an application-style
+baseline; it does not model every process permission or kernel transition path.
 
 `fixtures/omegaclaw_knowledge_prior.md` is generated from the MeTTa export and
 adds a small set of OmegaClaw `metta` commands for the first import/read

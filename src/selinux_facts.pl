@@ -7,6 +7,7 @@
     mls_range/4,
     type_bound/2,
     sensitive_capability/2,
+    sensitive_process_permission/2,
     has_attribute/2,
     type_transition/3,
     new_allow/5,
@@ -33,7 +34,10 @@ allow(sandbox_secret_reader_t, secret_doc_t, file, read).
 allow(sandbox_secret_parent_t, secret_doc_t, file, read).
 allow(ai_agent_t, self, capability, sys_admin).
 allow(ai_agent_t, self, capability, dac_override).
+allow(ai_agent_t, self, process, dyntransition).
+allow(ai_agent_t, self, process, noatsecure).
 allow(log_shipper_t, self, capability, audit_write).
+allow(log_shipper_t, self, process, sigchld).
 
 boolean_state(httpd_can_network_connect, true).
 boolean_state(httpd_enable_homedirs, false).
@@ -63,6 +67,9 @@ type_bound(sandbox_secret_reader_t, sandbox_secret_parent_t).
 
 sensitive_capability(sys_admin, kernel_administration).
 sensitive_capability(dac_override, dac_bypass).
+
+sensitive_process_permission(dyntransition, arbitrary_domain_transition).
+sensitive_process_permission(noatsecure, unsafe_exec_environment).
 
 has_attribute(httpd_t, webserver_domain).
 has_attribute(ai_agent_t, ai_agent_domain).
@@ -151,8 +158,20 @@ fact_source(
     source{tool: setools, artifact: 'toy_policy.allow', selector: 'allow ai_agent_t self:capability dac_override'}
 ).
 fact_source(
+    allow(ai_agent_t, self, process, dyntransition),
+    source{tool: setools, artifact: 'toy_policy.allow', selector: 'allow ai_agent_t self:process dyntransition'}
+).
+fact_source(
+    allow(ai_agent_t, self, process, noatsecure),
+    source{tool: setools, artifact: 'toy_policy.allow', selector: 'allow ai_agent_t self:process noatsecure'}
+).
+fact_source(
     allow(log_shipper_t, self, capability, audit_write),
     source{tool: setools, artifact: 'toy_policy.allow', selector: 'allow log_shipper_t self:capability audit_write'}
+).
+fact_source(
+    allow(log_shipper_t, self, process, sigchld),
+    source{tool: setools, artifact: 'toy_policy.allow', selector: 'allow log_shipper_t self:process sigchld'}
 ).
 
 fact_source(
@@ -230,6 +249,15 @@ fact_source(
 fact_source(
     sensitive_capability(dac_override, dac_bypass),
     source{tool: local_rubric, artifact: 'capability_severity', selector: 'dac_override'}
+).
+
+fact_source(
+    sensitive_process_permission(dyntransition, arbitrary_domain_transition),
+    source{tool: local_rubric, artifact: 'process_permission_severity', selector: 'dyntransition'}
+).
+fact_source(
+    sensitive_process_permission(noatsecure, unsafe_exec_environment),
+    source{tool: local_rubric, artifact: 'process_permission_severity', selector: 'noatsecure'}
 ).
 
 fact_source(

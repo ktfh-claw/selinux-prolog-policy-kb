@@ -39,6 +39,9 @@ metta_line(Line) :-
     sensitive_capability(Capability, Reason),
     sexpr_line(['sensitive-capability', Capability, Reason], Line).
 metta_line(Line) :-
+    sensitive_process_permission(Permission, Reason),
+    sexpr_line(['sensitive-process-permission', Permission, Reason], Line).
+metta_line(Line) :-
     has_attribute(Type, Attribute),
     sexpr_line(['has-attribute', Type, Attribute], Line).
 metta_line(Line) :-

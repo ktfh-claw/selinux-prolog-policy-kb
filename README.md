@@ -20,6 +20,8 @@ The first model layer covers:
   `mls_range(Entity, LowLevel, HighLevel, Categories)`
 - type-bound facts: `type_bound(ChildType, ParentType)`
 - sensitive capability rubric facts: `sensitive_capability(Capability, Reason)`
+- sensitive process-permission rubric facts:
+  `sensitive_process_permission(Permission, Reason)`
 - type attributes: `has_attribute(Type, Attribute)`
 - file-context facts: `file_context(Path, Type, Class)`
 - port-context facts: `port_context(Port, Type, Protocol)`
@@ -29,9 +31,9 @@ The first model layer covers:
 - derived audit predicates for risky web-shell paths, path-resolved domain
   transition reachability, path-level access, port-level `name_connect`
   reachability, constraint-blocked allows, type-bound-blocked allows, MLS
-  range-blocked reads, sensitive capability grants for AI-agent domains,
-  high-risk policy regressions, and severity classification for policy diffs
-  and findings with structured evidence
+  range-blocked reads, sensitive capability and process-permission grants for
+  AI-agent domains, high-risk policy regressions, and severity classification
+  for policy diffs and findings with structured evidence
 
 ## Layout
 
