@@ -68,4 +68,32 @@ test(audit_finding_policy_regression_shape) :-
     assertion(Finding.policy_version == policy_v2),
     assertion(Finding.target == shadow_t).
 
+test(audit_finding_web_shell_evidence) :-
+    once(audit_finding_with_evidence(risky_web_shell_path, Finding)),
+    assertion(Finding.source == httpd_t),
+    assertion(Finding.target == httpd_sys_script_exec_t),
+    assertion(Finding.evidence = [
+        allow(httpd_t, httpd_sys_script_exec_t, file, write)-_,
+        has_attribute(httpd_t, webserver_domain)-_,
+        has_attribute(httpd_sys_script_exec_t, executable_content)-_
+    ]).
+
+test(audit_finding_path_evidence) :-
+    once(audit_finding_with_evidence(risky_executable_content_path, Finding)),
+    assertion(Finding.path == '/var/www/cgi-bin/admin.cgi'),
+    assertion(Finding.evidence = [
+        file_context('/var/www/cgi-bin/admin.cgi', httpd_sys_script_exec_t, file)-_,
+        allow(httpd_t, httpd_sys_script_exec_t, file, write)-_,
+        has_attribute(httpd_t, webserver_domain)-_,
+        has_attribute(httpd_sys_script_exec_t, executable_content)-_
+    ]).
+
+test(audit_finding_policy_regression_evidence) :-
+    once(audit_finding_with_evidence(high_risk_policy_regression, Finding)),
+    assertion(Finding.policy_version == policy_v2),
+    assertion(Finding.evidence = [
+        new_allow(policy_v2, httpd_t, shadow_t, file, read)-_,
+        has_attribute(shadow_t, credential_store)-_
+    ]).
+
 :- end_tests(selinux_rules).

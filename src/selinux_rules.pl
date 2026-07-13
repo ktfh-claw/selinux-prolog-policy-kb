@@ -8,7 +8,8 @@
     can_domain_transition/3,
     can_domain_transition_via_path/3,
     high_risk_policy_regression/5,
-    audit_finding/2
+    audit_finding/2,
+    audit_finding_with_evidence/2
 ]).
 
 :- use_module(selinux_facts).
@@ -71,3 +72,51 @@ audit_finding(high_risk_policy_regression, finding{
     permission: Permission
 }) :-
     high_risk_policy_regression(PolicyVersion, Source, Target, Class, Permission).
+
+audit_finding_with_evidence(Kind, FindingWithEvidence) :-
+    audit_finding(Kind, Finding),
+    audit_evidence(Kind, Finding, Evidence),
+    put_dict(evidence, Finding, Evidence, FindingWithEvidence).
+
+audit_evidence(risky_web_shell_path, Finding, Evidence) :-
+    Source = Finding.source,
+    Target = Finding.target,
+    Evidence = [
+        allow(Source, Target, file, write)-AllowSource,
+        has_attribute(Source, webserver_domain)-SourceAttributeSource,
+        has_attribute(Target, executable_content)-TargetAttributeSource
+    ],
+    fact_source(allow(Source, Target, file, write), AllowSource),
+    fact_source(has_attribute(Source, webserver_domain), SourceAttributeSource),
+    fact_source(has_attribute(Target, executable_content), TargetAttributeSource).
+
+audit_evidence(risky_executable_content_path, Finding, Evidence) :-
+    Source = Finding.source,
+    Path = Finding.path,
+    file_context(Path, Target, file),
+    Evidence = [
+        file_context(Path, Target, file)-FileContextSource,
+        allow(Source, Target, file, write)-AllowSource,
+        has_attribute(Source, webserver_domain)-SourceAttributeSource,
+        has_attribute(Target, executable_content)-TargetAttributeSource
+    ],
+    fact_source(file_context(Path, Target, file), FileContextSource),
+    fact_source(allow(Source, Target, file, write), AllowSource),
+    fact_source(has_attribute(Source, webserver_domain), SourceAttributeSource),
+    fact_source(has_attribute(Target, executable_content), TargetAttributeSource).
+
+audit_evidence(high_risk_policy_regression, Finding, Evidence) :-
+    PolicyVersion = Finding.policy_version,
+    Source = Finding.source,
+    Target = Finding.target,
+    Class = Finding.class,
+    Permission = Finding.permission,
+    Evidence = [
+        new_allow(PolicyVersion, Source, Target, Class, Permission)-NewAllowSource,
+        has_attribute(Target, credential_store)-TargetAttributeSource
+    ],
+    fact_source(
+        new_allow(PolicyVersion, Source, Target, Class, Permission),
+        NewAllowSource
+    ),
+    fact_source(has_attribute(Target, credential_store), TargetAttributeSource).

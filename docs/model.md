@@ -10,6 +10,7 @@ SETools-style policy analysis output:
 - `type_transition(Source, Entrypoint, Target)`
 - `new_allow(PolicyVersion, Source, Target, Class, Permission)`
 - `file_context(Path, Type, Class)`
+- `fact_source(Fact, SourceMetadata)`
 
 These are treated as imported facts.
 
@@ -27,11 +28,18 @@ Derived predicates represent local audit questions:
 - `can_domain_transition_via_path/3`
 - `high_risk_policy_regression/5`
 - `audit_finding/2`
+- `audit_finding_with_evidence/2`
 
 `file_context/3` intentionally uses already-expanded path facts instead of
 implementing SELinux regex precedence. A real importer should normalize
 `semanage fcontext`, `matchpathcon`, or SETools-derived output before facts
 reach this model.
+
+`fact_source/2` stores provenance for imported facts as structured metadata.
+`audit_finding_with_evidence/2` keeps the original finding shape and adds an
+`evidence` list whose entries pair each supporting fact with its source
+metadata. This is intended for downstream consumers that need explainable
+reasoning output without parsing Prolog proof traces.
 
 ## Soundness Boundary
 
