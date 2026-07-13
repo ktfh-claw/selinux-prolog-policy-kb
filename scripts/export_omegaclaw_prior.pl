@@ -84,5 +84,5 @@ boundary_lines([
     '',
     '## Soundness Boundary',
     '',
-    'This fixture models only simple boolean-gated conditionals, explicit constraint-denial facts, resolved file and port contexts, type bounds, login/user/role/type mappings, service-unit summaries, capability/process-class grants, coarse firewall egress rules, normalized seccomp syscall rules, normalized cgroup resource-limit summaries, and a narrow read-side MLS/MCS range check. It does not model nested conditional expressions, full SELinux constraint expressions, write-side MLS/MCS range algebra, role transitions, DAC outcome checks, namespaces, full systemd semantics, or full firewall/seccomp/cgroup policy.'
+    'This fixture models only simple boolean-gated conditionals, explicit constraint-denial facts, resolved file and port contexts, type bounds, login/user/role/type mappings, service-unit summaries, action-to-primitive summaries, capability/process-class grants, coarse firewall egress rules, normalized seccomp syscall rules, normalized cgroup resource-limit summaries, and a narrow read-side MLS/MCS range check. It does not model nested conditional expressions, full SELinux constraint expressions, write-side MLS/MCS range algebra, role transitions, DAC outcome checks, namespaces, full systemd semantics, or full firewall/seccomp/cgroup policy.'
 ]).

@@ -14,6 +14,8 @@
     cgroup_assignment/2,
     cgroup_limit/5,
     service_unit/4,
+    administrator_action/3,
+    administrator_service_action/3,
     login_mapping/2,
     selinux_user_role/2,
     role_type/2,
@@ -112,6 +114,28 @@ service_unit(
     agent_service,
     '/usr/local/bin/log-shipper',
     always
+).
+
+administrator_action(
+    read_credential_store,
+    ai_agent_t,
+    selinux_access(shadow_t, file, read)
+).
+administrator_action(connect_web_api, ai_agent_t, name_connect(tcp, 80)).
+administrator_action(connect_database, ai_agent_t, name_connect(tcp, 5432)).
+administrator_action(create_namespace, ai_agent_t, syscall(clone3)).
+administrator_action(load_bpf_program, ai_agent_t, syscall(bpf)).
+administrator_action(exceed_pids_limit, ai_agent_t, resource(pids, 64, count)).
+
+administrator_service_action(
+    restart_loop_risk,
+    ai_agent_service,
+    restart_policy(always)
+).
+administrator_service_action(
+    restart_loop_risk,
+    log_shipper_service,
+    restart_policy(on_failure)
 ).
 
 login_mapping(alice, user_u).
@@ -420,6 +444,51 @@ fact_source(
         always
     ),
     source{tool: systemd, artifact: 'toy_units', selector: 'mislabelled-agent.service User=agent_service ExecStart=/usr/local/bin/log-shipper Restart=always'}
+).
+
+fact_source(
+    administrator_action(
+        read_credential_store,
+        ai_agent_t,
+        selinux_access(shadow_t, file, read)
+    ),
+    source{tool: local_action_profile, artifact: 'toy_admin_actions', selector: 'read_credential_store requires shadow_t:file read'}
+).
+fact_source(
+    administrator_action(connect_web_api, ai_agent_t, name_connect(tcp, 80)),
+    source{tool: local_action_profile, artifact: 'toy_admin_actions', selector: 'connect_web_api requires tcp/80 name_connect'}
+).
+fact_source(
+    administrator_action(connect_database, ai_agent_t, name_connect(tcp, 5432)),
+    source{tool: local_action_profile, artifact: 'toy_admin_actions', selector: 'connect_database requires tcp/5432 name_connect'}
+).
+fact_source(
+    administrator_action(create_namespace, ai_agent_t, syscall(clone3)),
+    source{tool: local_action_profile, artifact: 'toy_admin_actions', selector: 'create_namespace requires clone3'}
+).
+fact_source(
+    administrator_action(load_bpf_program, ai_agent_t, syscall(bpf)),
+    source{tool: local_action_profile, artifact: 'toy_admin_actions', selector: 'load_bpf_program requires bpf'}
+).
+fact_source(
+    administrator_action(exceed_pids_limit, ai_agent_t, resource(pids, 64, count)),
+    source{tool: local_action_profile, artifact: 'toy_admin_actions', selector: 'exceed_pids_limit crosses pids.max'}
+).
+fact_source(
+    administrator_service_action(
+        restart_loop_risk,
+        ai_agent_service,
+        restart_policy(always)
+    ),
+    source{tool: local_action_profile, artifact: 'toy_admin_actions', selector: 'restart_loop_risk for Restart=always'}
+).
+fact_source(
+    administrator_service_action(
+        restart_loop_risk,
+        log_shipper_service,
+        restart_policy(on_failure)
+    ),
+    source{tool: local_action_profile, artifact: 'toy_admin_actions', selector: 'restart_loop_risk baseline negative for Restart=on-failure'}
 ).
 
 fact_source(

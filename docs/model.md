@@ -20,6 +20,8 @@ SETools-style policy analysis output:
 - `cgroup_assignment(Source, Cgroup)`
 - `cgroup_limit(Cgroup, Resource, Value, Unit, Reason)`
 - `service_unit(Service, Login, EntrypointPath, RestartPolicy)`
+- `administrator_action(Action, Source, Primitive)`
+- `administrator_service_action(Action, Service, Primitive)`
 - `login_mapping(Login, SelinuxUser)`
 - `selinux_user_role(SelinuxUser, Role)`
 - `role_type(Role, Type)`
@@ -67,6 +69,10 @@ Derived predicates represent local audit questions:
 - `service_ai_agent_network_exposure/5`
 - `service_ai_agent_syscall_block/4`
 - `service_ai_agent_resource_limit/6`
+- `admin_action_allowed/3`
+- `admin_action_blocked/3`
+- `admin_action_risky/3`
+- `service_admin_action_risky/4`
 - `risky_web_shell_path/3`
 - `risky_executable_content_path/3`
 - `can_domain_transition/3`
@@ -170,6 +176,15 @@ configured login maps to one domain but the entrypoint transition resolves to
 another. Service-scoped AI-agent predicates reuse the existing network,
 seccomp, and cgroup checks after the unit domain is resolved.
 
+`administrator_action/3` and `administrator_service_action/3` map named
+AI-agent Linux administrator behaviors onto normalized primitives already in
+the model: SELinux access checks, port `name_connect`, seccomp syscalls,
+cgroup limits, and service restart policy. The `admin_action_allowed/3`,
+`admin_action_blocked/3`, and `admin_action_risky/3` predicates provide an
+action-level audit vocabulary without reimplementing those lower layers.
+`service_admin_action_risky/4` currently covers the narrow `Restart=always`
+loop-risk case for resolved AI-agent services.
+
 `fact_source/2` stores provenance for imported facts as structured metadata.
 `audit_finding_with_evidence/2` keeps the original finding shape and adds an
 `evidence` list whose entries pair each supporting fact with its source
@@ -195,6 +210,6 @@ It does not yet model:
 - role transitions and role dominance
 - file-context path matching
 - Linux DAC outcomes, namespaces, or full firewall/seccomp/cgroup policy
-- full systemd unit semantics or service dependency/order behavior
+- full systemd unit semantics, restart timing, or service dependency/order behavior
 
 Those should be added in small commits with tests.

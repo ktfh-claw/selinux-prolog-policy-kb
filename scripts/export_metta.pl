@@ -63,6 +63,12 @@ metta_line(Line) :-
         Line
     ).
 metta_line(Line) :-
+    administrator_action(Action, Source, Primitive),
+    sexpr_line(['administrator-action', Action, Source, Primitive], Line).
+metta_line(Line) :-
+    administrator_service_action(Action, Service, Primitive),
+    sexpr_line(['administrator-service-action', Action, Service, Primitive], Line).
+metta_line(Line) :-
     login_mapping(Login, SelinuxUser),
     sexpr_line(['login-mapping', Login, SelinuxUser], Line).
 metta_line(Line) :-
@@ -131,6 +137,11 @@ metta_token(Term, Token) :-
 metta_token(Term, Term) :-
     atom(Term),
     !.
+metta_token(Term, Token) :-
+    compound(Term),
+    !,
+    Term =.. Terms,
+    sexpr_line(Terms, Token).
 metta_token(Term, Token) :-
     format(atom(Token), '~w', [Term]).
 

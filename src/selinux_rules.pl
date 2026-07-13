@@ -31,6 +31,10 @@
     service_ai_agent_network_exposure/5,
     service_ai_agent_syscall_block/4,
     service_ai_agent_resource_limit/6,
+    admin_action_allowed/3,
+    admin_action_blocked/3,
+    admin_action_risky/3,
+    service_admin_action_risky/4,
     risky_web_shell_path/3,
     risky_executable_content_path/3,
     can_domain_transition/3,
@@ -208,6 +212,42 @@ service_ai_agent_syscall_block(Service, Domain, Syscall, Reason) :-
 service_ai_agent_resource_limit(Service, Domain, Resource, Value, Unit, Reason) :-
     service_domain(Service, Domain),
     ai_agent_resource_limit(Domain, Resource, Value, Unit, Reason).
+
+admin_action_allowed(Action, Source, selinux_access(Target, Class, Permission)) :-
+    administrator_action(Action, Source, selinux_access(Target, Class, Permission)),
+    can_access(Source, Target, Class, Permission).
+admin_action_allowed(Action, Source, name_connect(Protocol, Port, Reason)) :-
+    administrator_action(Action, Source, name_connect(Protocol, Port)),
+    runtime_name_connect_allowed(Source, Protocol, Port),
+    firewall_egress_rule(Source, Protocol, Port, allow, Reason).
+admin_action_allowed(Action, Source, syscall(Syscall, Reason)) :-
+    administrator_action(Action, Source, syscall(Syscall)),
+    runtime_syscall_allowed(Source, Syscall),
+    seccomp_profile(Source, Profile),
+    seccomp_rule(Profile, Syscall, allow, Reason).
+
+admin_action_blocked(Action, Source, selinux_denied(Target, Class, Permission)) :-
+    administrator_action(Action, Source, selinux_access(Target, Class, Permission)),
+    \+ can_access(Source, Target, Class, Permission).
+admin_action_blocked(Action, Source, firewall_blocked(Protocol, Port, Reason)) :-
+    administrator_action(Action, Source, name_connect(Protocol, Port)),
+    runtime_name_connect_blocked(Source, Protocol, Port, Reason).
+admin_action_blocked(Action, Source, seccomp_blocked(Syscall, Reason)) :-
+    administrator_action(Action, Source, syscall(Syscall)),
+    runtime_syscall_blocked(Source, Syscall, Reason).
+
+admin_action_risky(Action, Source, selinux_capability(Capability, Reason)) :-
+    administrator_action(Action, Source, _Primitive),
+    ai_agent_sensitive_capability(Source, Capability, Reason).
+admin_action_risky(Action, Source, cgroup_limit(Resource, Value, Unit, Reason)) :-
+    administrator_action(Action, Source, resource(Resource, Value, Unit)),
+    runtime_resource_limited(Source, Resource, Value, Unit, Reason).
+
+service_admin_action_risky(Action, Service, Domain, restart_policy(always)) :-
+    administrator_service_action(Action, Service, restart_policy(always)),
+    service_unit(Service, _Login, _EntrypointPath, always),
+    service_domain(Service, Domain),
+    has_attribute(Domain, ai_agent_domain).
 
 risky_web_shell_path(Source, Target, write_executable_content) :-
     effective_allow(Source, Target, file, write),

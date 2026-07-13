@@ -29,6 +29,27 @@ test(omegaclaw_prior_contains_path_and_severity_baselines) :-
         _,
         _,
         _,
+        '(administrator-action connect_database ai_agent_t (name_connect tcp 5432))'
+    )),
+    once(sub_string(
+        Text,
+        _,
+        _,
+        _,
+        '(administrator-action create_namespace ai_agent_t (syscall clone3))'
+    )),
+    once(sub_string(
+        Text,
+        _,
+        _,
+        _,
+        '(administrator-service-action restart_loop_risk ai_agent_service (restart_policy always))'
+    )),
+    once(sub_string(
+        Text,
+        _,
+        _,
+        _,
         '(allow ai_agent_t self capability dac_override)'
     )),
     once(sub_string(

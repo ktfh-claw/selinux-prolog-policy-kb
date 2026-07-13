@@ -280,6 +280,81 @@ test(service_ai_agent_resource_limit) :-
         pids_max_64
     )).
 
+test(admin_action_allows_web_api_connect) :-
+    once(admin_action_allowed(
+        connect_web_api,
+        ai_agent_t,
+        name_connect(tcp, 80, web_api_baseline)
+    )).
+
+test(admin_action_database_selinux_allowed) :-
+    once(can_name_connect_port(ai_agent_t, tcp, 5432)).
+
+test(admin_action_blocks_database_connect_by_firewall) :-
+    once(admin_action_blocked(
+        connect_database,
+        ai_agent_t,
+        firewall_blocked(tcp, 5432, database_egress_block)
+    )).
+
+test(admin_action_database_connect_not_runtime_allowed, [fail]) :-
+    admin_action_allowed(
+        connect_database,
+        ai_agent_t,
+        name_connect(tcp, 5432, _Reason)
+    ).
+
+test(admin_action_blocks_credential_store_read_by_selinux) :-
+    once(admin_action_blocked(
+        read_credential_store,
+        ai_agent_t,
+        selinux_denied(shadow_t, file, read)
+    )).
+
+test(admin_action_flags_credential_store_read_capability_risk) :-
+    once(admin_action_risky(
+        read_credential_store,
+        ai_agent_t,
+        selinux_capability(dac_override, dac_bypass)
+    )).
+
+test(admin_action_blocks_namespace_create_by_seccomp) :-
+    once(admin_action_blocked(
+        create_namespace,
+        ai_agent_t,
+        seccomp_blocked(clone3, no_unprivileged_namespace_creation)
+    )).
+
+test(admin_action_blocks_bpf_load_by_seccomp) :-
+    once(admin_action_blocked(
+        load_bpf_program,
+        ai_agent_t,
+        seccomp_blocked(bpf, block_kernel_observability)
+    )).
+
+test(admin_action_flags_pids_limit_risk) :-
+    once(admin_action_risky(
+        exceed_pids_limit,
+        ai_agent_t,
+        cgroup_limit(pids, 64, count, pids_max_64)
+    )).
+
+test(service_admin_action_flags_restart_always_loop_risk) :-
+    once(service_admin_action_risky(
+        restart_loop_risk,
+        ai_agent_service,
+        ai_agent_t,
+        restart_policy(always)
+    )).
+
+test(service_admin_action_ignores_on_failure_restart_policy, [fail]) :-
+    service_admin_action_risky(
+        restart_loop_risk,
+        log_shipper_service,
+        log_shipper_t,
+        restart_policy(always)
+    ).
+
 test(risky_web_shell_path) :-
     once(risky_web_shell_path(
         httpd_t,

@@ -7,6 +7,14 @@ The source facts are toy SETools/sepolicy_analysis-shaped facts, not a real host
 
 Use these as structured facts for OmegaClaw MeTTa/NAL reasoning experiments.
 
+- `(administrator-action connect_database ai_agent_t (name_connect tcp 5432))`
+- `(administrator-action connect_web_api ai_agent_t (name_connect tcp 80))`
+- `(administrator-action create_namespace ai_agent_t (syscall clone3))`
+- `(administrator-action exceed_pids_limit ai_agent_t (resource pids 64 count))`
+- `(administrator-action load_bpf_program ai_agent_t (syscall bpf))`
+- `(administrator-action read_credential_store ai_agent_t (selinux_access shadow_t file read))`
+- `(administrator-service-action restart_loop_risk ai_agent_service (restart_policy always))`
+- `(administrator-service-action restart_loop_risk log_shipper_service (restart_policy on_failure))`
 - `(allow ai_agent_t http_port_t tcp_socket name_connect)`
 - `(allow ai_agent_t postgresql_port_t tcp_socket name_connect)`
 - `(allow ai_agent_t self capability dac_override)`
@@ -166,4 +174,4 @@ The useful result is not that the toy facts are realistic; it is whether OmegaCl
 
 ## Soundness Boundary
 
-This fixture models only simple boolean-gated conditionals, explicit constraint-denial facts, resolved file and port contexts, type bounds, login/user/role/type mappings, service-unit summaries, capability/process-class grants, coarse firewall egress rules, normalized seccomp syscall rules, normalized cgroup resource-limit summaries, and a narrow read-side MLS/MCS range check. It does not model nested conditional expressions, full SELinux constraint expressions, write-side MLS/MCS range algebra, role transitions, DAC outcome checks, namespaces, full systemd semantics, or full firewall/seccomp/cgroup policy.
+This fixture models only simple boolean-gated conditionals, explicit constraint-denial facts, resolved file and port contexts, type bounds, login/user/role/type mappings, service-unit summaries, action-to-primitive summaries, capability/process-class grants, coarse firewall egress rules, normalized seccomp syscall rules, normalized cgroup resource-limit summaries, and a narrow read-side MLS/MCS range check. It does not model nested conditional expressions, full SELinux constraint expressions, write-side MLS/MCS range algebra, role transitions, DAC outcome checks, namespaces, full systemd semantics, or full firewall/seccomp/cgroup policy.

@@ -30,6 +30,9 @@ The first model layer covers:
   `cgroup_limit(Cgroup, Resource, Value, Unit, Reason)`
 - normalized service-unit facts:
   `service_unit(Service, Login, EntrypointPath, RestartPolicy)`
+- AI-agent administrator action facts:
+  `administrator_action(Action, Source, Primitive)` and
+  `administrator_service_action(Action, Service, Primitive)`
 - login/user/role/type mapping facts: `login_mapping(Login, SelinuxUser)`,
   `selinux_user_role(SelinuxUser, Role)`, and `role_type(Role, Type)`
 - type attributes: `has_attribute(Type, Attribute)`
@@ -44,7 +47,8 @@ The first model layer covers:
   range-blocked reads, sensitive capability and process-permission grants for
   AI-agent domains, mapped logins, and service units, runtime network and
   syscall block checks, runtime cgroup resource-limit checks, service-domain
-  mismatch checks, high-risk policy regressions, and
+  mismatch checks, action-level allowed/blocked/risky administrator checks,
+  high-risk policy regressions, and
   severity classification for policy diffs and findings with structured
   evidence
 
