@@ -59,6 +59,8 @@ Derived predicates represent local audit questions:
 - `runtime_syscall_blocked/3`
 - `ai_agent_syscall_block/3`
 - `runtime_resource_limited/5`
+- `runtime_resource_within_limit/5`
+- `runtime_resource_exceeds_limit/6`
 - `ai_agent_resource_limit/5`
 - `login_domain/2`
 - `login_can_access/4`
@@ -165,6 +167,9 @@ not raw BPF/seccomp filter evaluation.
 `cgroup_assignment/2` and `cgroup_limit/5` add a third normalized runtime policy
 layer for resource isolation. `runtime_resource_limited/5` joins a domain to its
 cgroup and then to resource caps such as `pids.max` and `memory.max`.
+`runtime_resource_within_limit/5` and `runtime_resource_exceeds_limit/6` compare
+an action's requested resource amount to that cap, treating equal-to-limit as
+allowed and greater-than-limit as blocked.
 `ai_agent_resource_limit/5` scopes those limits to domains tagged with
 `ai_agent_domain`. These facts are summaries of already-resolved cgroup policy,
 not a model of controller inheritance, delegation, pressure metrics, or systemd

@@ -7,12 +7,14 @@ The source facts are toy SETools/sepolicy_analysis-shaped facts, not a real host
 
 Use these as structured facts for OmegaClaw MeTTa/NAL reasoning experiments.
 
+- `(administrator-action allocate_large_memory ai_agent_t (resource memory 1024 mebibytes))`
 - `(administrator-action connect_database ai_agent_t (name_connect tcp 5432))`
 - `(administrator-action connect_web_api ai_agent_t (name_connect tcp 80))`
 - `(administrator-action create_namespace ai_agent_t (syscall clone3))`
-- `(administrator-action exceed_pids_limit ai_agent_t (resource pids 64 count))`
+- `(administrator-action exceed_pids_limit ai_agent_t (resource pids 65 count))`
 - `(administrator-action load_bpf_program ai_agent_t (syscall bpf))`
 - `(administrator-action read_credential_store ai_agent_t (selinux_access shadow_t file read))`
+- `(administrator-action run_small_worker_pool ai_agent_t (resource pids 32 count))`
 - `(administrator-service-action restart_loop_risk ai_agent_service (restart_policy always))`
 - `(administrator-service-action restart_loop_risk log_shipper_service (restart_policy on_failure))`
 - `(administrator-service-action restart_loop_risk mislabelled_agent_service (restart_policy always))`

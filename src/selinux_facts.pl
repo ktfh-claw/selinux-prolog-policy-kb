@@ -125,7 +125,9 @@ administrator_action(connect_web_api, ai_agent_t, name_connect(tcp, 80)).
 administrator_action(connect_database, ai_agent_t, name_connect(tcp, 5432)).
 administrator_action(create_namespace, ai_agent_t, syscall(clone3)).
 administrator_action(load_bpf_program, ai_agent_t, syscall(bpf)).
-administrator_action(exceed_pids_limit, ai_agent_t, resource(pids, 64, count)).
+administrator_action(run_small_worker_pool, ai_agent_t, resource(pids, 32, count)).
+administrator_action(exceed_pids_limit, ai_agent_t, resource(pids, 65, count)).
+administrator_action(allocate_large_memory, ai_agent_t, resource(memory, 1024, mebibytes)).
 
 administrator_service_action(
     restart_loop_risk,
@@ -476,8 +478,16 @@ fact_source(
     source{tool: local_action_profile, artifact: 'toy_admin_actions', selector: 'load_bpf_program requires bpf'}
 ).
 fact_source(
-    administrator_action(exceed_pids_limit, ai_agent_t, resource(pids, 64, count)),
+    administrator_action(run_small_worker_pool, ai_agent_t, resource(pids, 32, count)),
+    source{tool: local_action_profile, artifact: 'toy_admin_actions', selector: 'run_small_worker_pool stays below pids.max'}
+).
+fact_source(
+    administrator_action(exceed_pids_limit, ai_agent_t, resource(pids, 65, count)),
     source{tool: local_action_profile, artifact: 'toy_admin_actions', selector: 'exceed_pids_limit crosses pids.max'}
+).
+fact_source(
+    administrator_action(allocate_large_memory, ai_agent_t, resource(memory, 1024, mebibytes)),
+    source{tool: local_action_profile, artifact: 'toy_admin_actions', selector: 'allocate_large_memory crosses memory.max'}
 ).
 fact_source(
     administrator_service_action(

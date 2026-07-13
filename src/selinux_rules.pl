@@ -11,6 +11,8 @@
     runtime_syscall_blocked/3,
     ai_agent_syscall_block/3,
     runtime_resource_limited/5,
+    runtime_resource_within_limit/5,
+    runtime_resource_exceeds_limit/6,
     ai_agent_resource_limit/5,
     access_denied_by_constraint/5,
     access_denied_by_type_bound/6,
@@ -110,6 +112,23 @@ ai_agent_syscall_block(Source, Syscall, Reason) :-
 runtime_resource_limited(Source, Resource, Value, Unit, Reason) :-
     cgroup_assignment(Source, Cgroup),
     cgroup_limit(Cgroup, Resource, Value, Unit, Reason).
+
+runtime_resource_within_limit(Source, Resource, RequestedValue, Unit, Reason) :-
+    cgroup_assignment(Source, Cgroup),
+    cgroup_limit(Cgroup, Resource, LimitValue, Unit, Reason),
+    RequestedValue =< LimitValue.
+
+runtime_resource_exceeds_limit(
+    Source,
+    Resource,
+    RequestedValue,
+    LimitValue,
+    Unit,
+    Reason
+) :-
+    cgroup_assignment(Source, Cgroup),
+    cgroup_limit(Cgroup, Resource, LimitValue, Unit, Reason),
+    RequestedValue > LimitValue.
 
 ai_agent_resource_limit(Source, Resource, Value, Unit, Reason) :-
     has_attribute(Source, ai_agent_domain),
@@ -227,6 +246,9 @@ admin_action_allowed(Action, Source, syscall(Syscall, Reason)) :-
     runtime_syscall_allowed(Source, Syscall),
     seccomp_profile(Source, Profile),
     seccomp_rule(Profile, Syscall, allow, Reason).
+admin_action_allowed(Action, Source, resource(Resource, RequestedValue, Unit, Reason)) :-
+    administrator_action(Action, Source, resource(Resource, RequestedValue, Unit)),
+    runtime_resource_within_limit(Source, Resource, RequestedValue, Unit, Reason).
 
 admin_action_blocked(Action, Source, selinux_denied(Target, Class, Permission)) :-
     administrator_action(Action, Source, selinux_access(Target, Class, Permission)),
@@ -237,6 +259,20 @@ admin_action_blocked(Action, Source, firewall_blocked(Protocol, Port, Reason)) :
 admin_action_blocked(Action, Source, seccomp_blocked(Syscall, Reason)) :-
     administrator_action(Action, Source, syscall(Syscall)),
     runtime_syscall_blocked(Source, Syscall, Reason).
+admin_action_blocked(
+    Action,
+    Source,
+    cgroup_blocked(Resource, RequestedValue, LimitValue, Unit, Reason)
+) :-
+    administrator_action(Action, Source, resource(Resource, RequestedValue, Unit)),
+    runtime_resource_exceeds_limit(
+        Source,
+        Resource,
+        RequestedValue,
+        LimitValue,
+        Unit,
+        Reason
+    ).
 
 admin_action_policy_conflict(
     Action,
@@ -252,7 +288,7 @@ admin_action_risky(Action, Source, selinux_capability(Capability, Reason)) :-
     ai_agent_sensitive_capability(Source, Capability, Reason).
 admin_action_risky(Action, Source, cgroup_limit(Resource, Value, Unit, Reason)) :-
     administrator_action(Action, Source, resource(Resource, Value, Unit)),
-    runtime_resource_limited(Source, Resource, Value, Unit, Reason).
+    runtime_resource_exceeds_limit(Source, Resource, Value, _LimitValue, Unit, Reason).
 
 service_admin_action_blocked(
     Action,

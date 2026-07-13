@@ -83,6 +83,35 @@ test(runtime_resource_limit_from_cgroup) :-
         pids_max_64
     )).
 
+test(runtime_resource_within_limit) :-
+    once(runtime_resource_within_limit(
+        ai_agent_t,
+        pids,
+        32,
+        count,
+        pids_max_64
+    )).
+
+test(runtime_resource_exceeds_limit) :-
+    once(runtime_resource_exceeds_limit(
+        ai_agent_t,
+        memory,
+        1024,
+        512,
+        mebibytes,
+        memory_max_512m
+    )).
+
+test(runtime_resource_equal_to_limit_is_not_exceeded, [fail]) :-
+    runtime_resource_exceeds_limit(
+        ai_agent_t,
+        pids,
+        64,
+        _LimitValue,
+        count,
+        _Reason
+    ).
+
 test(ai_agent_resource_limit_from_cgroup) :-
     once(ai_agent_resource_limit(
         ai_agent_t,
@@ -350,11 +379,32 @@ test(admin_action_blocks_bpf_load_by_seccomp) :-
         seccomp_blocked(bpf, block_kernel_observability)
     )).
 
+test(admin_action_allows_small_worker_pool_by_cgroup_limit) :-
+    once(admin_action_allowed(
+        run_small_worker_pool,
+        ai_agent_t,
+        resource(pids, 32, count, pids_max_64)
+    )).
+
+test(admin_action_blocks_pids_limit_exceedance) :-
+    once(admin_action_blocked(
+        exceed_pids_limit,
+        ai_agent_t,
+        cgroup_blocked(pids, 65, 64, count, pids_max_64)
+    )).
+
+test(admin_action_blocks_large_memory_request) :-
+    once(admin_action_blocked(
+        allocate_large_memory,
+        ai_agent_t,
+        cgroup_blocked(memory, 1024, 512, mebibytes, memory_max_512m)
+    )).
+
 test(admin_action_flags_pids_limit_risk) :-
     once(admin_action_risky(
         exceed_pids_limit,
         ai_agent_t,
-        cgroup_limit(pids, 64, count, pids_max_64)
+        cgroup_limit(pids, 65, count, pids_max_64)
     )).
 
 test(service_admin_action_flags_restart_always_loop_risk) :-
