@@ -11,6 +11,7 @@ SETools-style policy analysis output:
 - `constraint_denies(Source, Target, Class, Permission, Reason)`
 - `sensitivity_level(Level, Rank)`
 - `mls_range(Entity, LowLevel, HighLevel, Categories)`
+- `type_bound(ChildType, ParentType)`
 - `has_attribute(Type, Attribute)`
 - `type_transition(Source, Entrypoint, Target)`
 - `new_allow(PolicyVersion, Source, Target, Class, Permission)`
@@ -28,6 +29,7 @@ Derived predicates represent local audit questions:
 - `can_read_path/2`
 - `can_read_web_content/1`
 - `access_denied_by_constraint/5`
+- `access_denied_by_type_bound/6`
 - `sensitivity_dominates/2`
 - `mls_read_allowed/2`
 - `mls_read_blocked/3`
@@ -46,6 +48,12 @@ controlling `boolean_state/2` is `true`, then removes any access covered by an
 explicit `constraint_denies/5` fact. Disabled boolean-gated allows and
 constraint-blocked allows are kept as imported facts but do not become effective
 access.
+
+`type_bound/2` represents an already-normalized SELinux typebounds relation.
+For the current read/write access layer, a child type's imported allow is not
+effective unless the bounded parent type has the same allow candidate. This
+models the common audit question without attempting to reproduce every kernel
+typebounds edge case.
 
 `constraint_denies/5` is an already-normalized imported fact, not a full
 implementation of SELinux constraint expression evaluation. This keeps the
@@ -92,7 +100,6 @@ It does not yet model:
 
 - nested conditional expressions beyond one controlling boolean
 - full SELinux constraint expressions and write-side MLS/MCS range algebra
-- type bounds
 - role/user mappings
 - file-context path matching
 - Linux DAC, capabilities, seccomp, cgroups, namespaces, or firewall policy

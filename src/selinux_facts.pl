@@ -5,6 +5,7 @@
     constraint_denies/5,
     sensitivity_level/2,
     mls_range/4,
+    type_bound/2,
     has_attribute/2,
     type_transition/3,
     new_allow/5,
@@ -23,6 +24,9 @@ allow(init_t, daemon_t, process, transition).
 allow(user_t, secret_doc_t, file, read).
 allow(auditor_t, secret_doc_t, file, read).
 allow(auditor_limited_t, secret_doc_t, file, read).
+allow(sandbox_web_t, httpd_sys_content_t, file, read).
+allow(sandbox_web_parent_t, httpd_sys_content_t, file, read).
+allow(sandbox_web_t, httpd_log_t, file, append).
 
 boolean_state(httpd_can_network_connect, true).
 boolean_state(httpd_enable_homedirs, false).
@@ -39,6 +43,8 @@ mls_range(user_t, s0, s0, [c0]).
 mls_range(auditor_t, s0, s1, [c0, c1]).
 mls_range(auditor_limited_t, s0, s1, [c0]).
 mls_range(secret_doc_t, s1, s1, [c1]).
+
+type_bound(sandbox_web_t, sandbox_web_parent_t).
 
 has_attribute(httpd_t, webserver_domain).
 has_attribute(httpd_sys_script_exec_t, executable_content).
@@ -94,6 +100,18 @@ fact_source(
     allow(auditor_limited_t, secret_doc_t, file, read),
     source{tool: setools, artifact: 'toy_policy.allow', selector: 'allow auditor_limited_t secret_doc_t:file read'}
 ).
+fact_source(
+    allow(sandbox_web_t, httpd_sys_content_t, file, read),
+    source{tool: setools, artifact: 'toy_policy.allow', selector: 'allow sandbox_web_t httpd_sys_content_t:file read'}
+).
+fact_source(
+    allow(sandbox_web_parent_t, httpd_sys_content_t, file, read),
+    source{tool: setools, artifact: 'toy_policy.allow', selector: 'allow sandbox_web_parent_t httpd_sys_content_t:file read'}
+).
+fact_source(
+    allow(sandbox_web_t, httpd_log_t, file, append),
+    source{tool: setools, artifact: 'toy_policy.allow', selector: 'allow sandbox_web_t httpd_log_t:file append'}
+).
 
 fact_source(
     boolean_state(httpd_can_network_connect, true),
@@ -142,6 +160,11 @@ fact_source(
 fact_source(
     mls_range(secret_doc_t, s1, s1, [c1]),
     source{tool: sepolicy, artifact: 'toy_policy.mls', selector: 'secret_doc_t:s1-s1:c1'}
+).
+
+fact_source(
+    type_bound(sandbox_web_t, sandbox_web_parent_t),
+    source{tool: setools, artifact: 'toy_policy.typebounds', selector: 'typebounds sandbox_web_parent_t sandbox_web_t'}
 ).
 
 fact_source(

@@ -15,6 +15,9 @@ Use these as structured facts for OmegaClaw MeTTa/NAL reasoning experiments.
 - `(allow httpd_t httpd_sys_script_exec_t file write)`
 - `(allow init_t daemon_exec_t file entrypoint)`
 - `(allow init_t daemon_t process transition)`
+- `(allow sandbox_web_parent_t httpd_sys_content_t file read)`
+- `(allow sandbox_web_t httpd_log_t file append)`
+- `(allow sandbox_web_t httpd_sys_content_t file read)`
 - `(allow user_t secret_doc_t file read)`
 - `(audit-finding constraint_blocked_allow (class file) (permission read) (reason mls_range_mismatch) (source user_t) (target secret_doc_t))`
 - `(audit-finding high_risk_policy_regression (class file) (permission read) (policy_version policy_v2) (source httpd_t) (target shadow_t))`
@@ -22,6 +25,7 @@ Use these as structured facts for OmegaClaw MeTTa/NAL reasoning experiments.
 - `(audit-finding mls_blocked_read (reason insufficient_mls_range) (source user_t) (target secret_doc_t))`
 - `(audit-finding risky_executable_content_path (path "/var/www/cgi-bin/admin.cgi") (reason write_executable_content) (source httpd_t))`
 - `(audit-finding risky_web_shell_path (reason write_executable_content) (source httpd_t) (target httpd_sys_script_exec_t))`
+- `(audit-finding type_bound_blocked_allow (class file) (parent sandbox_web_parent_t) (permission append) (reason parent_missing_allow) (source sandbox_web_t) (target httpd_log_t))`
 - `(boolean-state httpd_can_network_connect true)`
 - `(boolean-state httpd_enable_homedirs false)`
 - `(conditional-allow httpd_can_network_connect httpd_t http_port_t tcp_socket name_connect)`
@@ -49,6 +53,7 @@ Use these as structured facts for OmegaClaw MeTTa/NAL reasoning experiments.
 - `(policy-regression-severity policy_v2 httpd_t shadow_t file read critical)`
 - `(sensitivity-level s0 0)`
 - `(sensitivity-level s1 1)`
+- `(type-bound sandbox_web_t sandbox_web_parent_t)`
 - `(type-transition init_t daemon_exec_t daemon_t)`
 
 ## Baseline OmegaClaw Commands

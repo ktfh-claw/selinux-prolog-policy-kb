@@ -71,6 +71,13 @@ test(omegaclaw_prior_contains_path_and_severity_baselines) :-
         _,
         _,
         _,
+        '(type-bound sandbox_web_t sandbox_web_parent_t)'
+    )),
+    once(sub_string(
+        Text,
+        _,
+        _,
+        _,
         '(policy-regression-severity policy_v2 httpd_t shadow_t file read critical)'
     )),
     once(sub_string(

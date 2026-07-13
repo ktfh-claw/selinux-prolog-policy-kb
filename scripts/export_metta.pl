@@ -33,6 +33,9 @@ metta_line(Line) :-
     mls_range(Entity, Low, High, Categories),
     sexpr_line(['mls-range', Entity, Low, High, Categories], Line).
 metta_line(Line) :-
+    type_bound(Child, Parent),
+    sexpr_line(['type-bound', Child, Parent], Line).
+metta_line(Line) :-
     has_attribute(Type, Attribute),
     sexpr_line(['has-attribute', Type, Attribute], Line).
 metta_line(Line) :-

@@ -44,6 +44,22 @@ test(access_denied_by_constraint) :-
         mls_range_mismatch
     )).
 
+test(type_bound_allows_parent_permitted_access) :-
+    once(can_access(sandbox_web_t, httpd_sys_content_t, file, read)).
+
+test(type_bound_blocks_child_extra_access, [fail]) :-
+    can_access(sandbox_web_t, httpd_log_t, file, append).
+
+test(access_denied_by_type_bound) :-
+    once(access_denied_by_type_bound(
+        sandbox_web_t,
+        httpd_log_t,
+        file,
+        append,
+        sandbox_web_parent_t,
+        parent_missing_allow
+    )).
+
 test(sensitivity_dominates_same_level) :-
     once(sensitivity_dominates(s0, s0)).
 
@@ -150,6 +166,13 @@ test(audit_finding_constraint_shape) :-
     assertion(Finding.target == secret_doc_t),
     assertion(Finding.reason == mls_range_mismatch).
 
+test(audit_finding_type_bound_shape) :-
+    once(audit_finding(type_bound_blocked_allow, Finding)),
+    assertion(Finding.source == sandbox_web_t),
+    assertion(Finding.parent == sandbox_web_parent_t),
+    assertion(Finding.target == httpd_log_t),
+    assertion(Finding.reason == parent_missing_allow).
+
 test(audit_finding_mls_shape) :-
     once(audit_finding(mls_blocked_read, Finding)),
     assertion(Finding.source == user_t),
@@ -190,6 +213,14 @@ test(audit_finding_constraint_evidence) :-
     assertion(Finding.evidence = [
         allow(user_t, secret_doc_t, file, read)-_,
         constraint_denies(user_t, secret_doc_t, file, read, mls_range_mismatch)-_
+    ]).
+
+test(audit_finding_type_bound_evidence) :-
+    once(audit_finding_with_evidence(type_bound_blocked_allow, Finding)),
+    assertion(Finding.reason == parent_missing_allow),
+    assertion(Finding.evidence = [
+        allow(sandbox_web_t, httpd_log_t, file, append)-_,
+        type_bound(sandbox_web_t, sandbox_web_parent_t)-_
     ]).
 
 test(audit_finding_mls_evidence) :-

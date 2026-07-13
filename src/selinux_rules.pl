@@ -5,6 +5,7 @@
     can_read_web_content/1,
     can_read_path/2,
     access_denied_by_constraint/5,
+    access_denied_by_type_bound/6,
     sensitivity_dominates/2,
     mls_read_allowed/2,
     mls_read_blocked/3,
@@ -22,7 +23,15 @@
 
 effective_allow(Source, Target, Class, Permission) :-
     effective_allow_candidate(Source, Target, Class, Permission),
-    \+ constraint_denies(Source, Target, Class, Permission, _Reason).
+    \+ constraint_denies(Source, Target, Class, Permission, _Reason),
+    \+ access_denied_by_type_bound(
+        Source,
+        Target,
+        Class,
+        Permission,
+        _Parent,
+        _BoundReason
+    ).
 
 effective_allow_candidate(Source, Target, Class, Permission) :-
     allow(Source, Target, Class, Permission).
@@ -46,6 +55,18 @@ can_read_path(Source, Path) :-
 access_denied_by_constraint(Source, Target, Class, Permission, Reason) :-
     effective_allow_candidate(Source, Target, Class, Permission),
     constraint_denies(Source, Target, Class, Permission, Reason).
+
+access_denied_by_type_bound(
+    Source,
+    Target,
+    Class,
+    Permission,
+    Parent,
+    parent_missing_allow
+) :-
+    type_bound(Source, Parent),
+    effective_allow_candidate(Source, Target, Class, Permission),
+    \+ effective_allow_candidate(Parent, Target, Class, Permission).
 
 sensitivity_dominates(SourceLevel, TargetLevel) :-
     sensitivity_level(SourceLevel, SourceRank),
@@ -136,6 +157,23 @@ audit_finding(constraint_blocked_allow, finding{
 }) :-
     access_denied_by_constraint(Source, Target, Class, Permission, Reason).
 
+audit_finding(type_bound_blocked_allow, finding{
+    source: Source,
+    parent: Parent,
+    target: Target,
+    class: Class,
+    permission: Permission,
+    reason: Reason
+}) :-
+    access_denied_by_type_bound(
+        Source,
+        Target,
+        Class,
+        Permission,
+        Parent,
+        Reason
+    ).
+
 audit_finding(mls_blocked_read, finding{
     source: Source,
     target: Target,
@@ -206,6 +244,19 @@ audit_evidence(constraint_blocked_allow, Finding, Evidence) :-
         constraint_denies(Source, Target, Class, Permission, Reason),
         ConstraintSource
     ).
+
+audit_evidence(type_bound_blocked_allow, Finding, Evidence) :-
+    Source = Finding.source,
+    Parent = Finding.parent,
+    Target = Finding.target,
+    Class = Finding.class,
+    Permission = Finding.permission,
+    Evidence = [
+        allow(Source, Target, Class, Permission)-AllowSource,
+        type_bound(Source, Parent)-TypeBoundSource
+    ],
+    fact_source(allow(Source, Target, Class, Permission), AllowSource),
+    fact_source(type_bound(Source, Parent), TypeBoundSource).
 
 audit_evidence(mls_blocked_read, Finding, Evidence) :-
     Source = Finding.source,
