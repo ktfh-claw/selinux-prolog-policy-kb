@@ -8,6 +8,9 @@
     type_bound/2,
     sensitive_capability/2,
     sensitive_process_permission/2,
+    login_mapping/2,
+    selinux_user_role/2,
+    role_type/2,
     has_attribute/2,
     type_transition/3,
     new_allow/5,
@@ -70,6 +73,18 @@ sensitive_capability(dac_override, dac_bypass).
 
 sensitive_process_permission(dyntransition, arbitrary_domain_transition).
 sensitive_process_permission(noatsecure, unsafe_exec_environment).
+
+login_mapping(alice, user_u).
+login_mapping(agent_service, agent_u).
+login_mapping(log_shipper, log_u).
+
+selinux_user_role(user_u, user_r).
+selinux_user_role(agent_u, agent_r).
+selinux_user_role(log_u, log_r).
+
+role_type(user_r, user_t).
+role_type(agent_r, ai_agent_t).
+role_type(log_r, log_shipper_t).
 
 has_attribute(httpd_t, webserver_domain).
 has_attribute(ai_agent_t, ai_agent_domain).
@@ -258,6 +273,45 @@ fact_source(
 fact_source(
     sensitive_process_permission(noatsecure, unsafe_exec_environment),
     source{tool: local_rubric, artifact: 'process_permission_severity', selector: 'noatsecure'}
+).
+
+fact_source(
+    login_mapping(alice, user_u),
+    source{tool: semanage, artifact: 'toy_login_mappings', selector: 'alice -> user_u'}
+).
+fact_source(
+    login_mapping(agent_service, agent_u),
+    source{tool: semanage, artifact: 'toy_login_mappings', selector: 'agent_service -> agent_u'}
+).
+fact_source(
+    login_mapping(log_shipper, log_u),
+    source{tool: semanage, artifact: 'toy_login_mappings', selector: 'log_shipper -> log_u'}
+).
+
+fact_source(
+    selinux_user_role(user_u, user_r),
+    source{tool: sepolicy, artifact: 'toy_users', selector: 'user user_u roles { user_r }'}
+).
+fact_source(
+    selinux_user_role(agent_u, agent_r),
+    source{tool: sepolicy, artifact: 'toy_users', selector: 'user agent_u roles { agent_r }'}
+).
+fact_source(
+    selinux_user_role(log_u, log_r),
+    source{tool: sepolicy, artifact: 'toy_users', selector: 'user log_u roles { log_r }'}
+).
+
+fact_source(
+    role_type(user_r, user_t),
+    source{tool: setools, artifact: 'toy_policy.roles', selector: 'role user_r types user_t'}
+).
+fact_source(
+    role_type(agent_r, ai_agent_t),
+    source{tool: setools, artifact: 'toy_policy.roles', selector: 'role agent_r types ai_agent_t'}
+).
+fact_source(
+    role_type(log_r, log_shipper_t),
+    source{tool: setools, artifact: 'toy_policy.roles', selector: 'role log_r types log_shipper_t'}
 ).
 
 fact_source(

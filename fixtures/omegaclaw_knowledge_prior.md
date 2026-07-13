@@ -34,6 +34,10 @@ Use these as structured facts for OmegaClaw MeTTa/NAL reasoning experiments.
 - `(audit-finding constraint_blocked_allow (class file) (permission read) (reason mls_range_mismatch) (source user_t) (target secret_doc_t))`
 - `(audit-finding constraint_blocked_allow (class file) (permission read) (reason parent_mls_range_mismatch) (source sandbox_secret_parent_t) (target secret_doc_t))`
 - `(audit-finding high_risk_policy_regression (class file) (permission read) (policy_version policy_v2) (source httpd_t) (target shadow_t))`
+- `(audit-finding login_sensitive_capability (capability dac_override) (domain ai_agent_t) (login agent_service) (reason dac_bypass))`
+- `(audit-finding login_sensitive_capability (capability sys_admin) (domain ai_agent_t) (login agent_service) (reason kernel_administration))`
+- `(audit-finding login_sensitive_process_permission (domain ai_agent_t) (login agent_service) (permission dyntransition) (reason arbitrary_domain_transition))`
+- `(audit-finding login_sensitive_process_permission (domain ai_agent_t) (login agent_service) (permission noatsecure) (reason unsafe_exec_environment))`
 - `(audit-finding mls_blocked_read (reason insufficient_mls_range) (source auditor_limited_t) (target secret_doc_t))`
 - `(audit-finding mls_blocked_read (reason insufficient_mls_range) (source user_t) (target secret_doc_t))`
 - `(audit-finding risky_executable_content_path (path "/var/www/cgi-bin/admin.cgi") (reason write_executable_content) (source httpd_t))`
@@ -57,6 +61,9 @@ Use these as structured facts for OmegaClaw MeTTa/NAL reasoning experiments.
 - `(has-attribute httpd_sys_script_exec_t executable_content)`
 - `(has-attribute httpd_t webserver_domain)`
 - `(has-attribute shadow_t credential_store)`
+- `(login-mapping agent_service agent_u)`
+- `(login-mapping alice user_u)`
+- `(login-mapping log_shipper log_u)`
 - `(mls-range auditor_limited_t s0 s1 (c0))`
 - `(mls-range auditor_t s0 s1 (c0 c1))`
 - `(mls-range secret_doc_t s1 s1 (c1))`
@@ -69,6 +76,12 @@ Use these as structured facts for OmegaClaw MeTTa/NAL reasoning experiments.
 - `(policy-regression-severity policy_v2 httpd_t shadow_t file read critical)`
 - `(port-context 5432 postgresql_port_t tcp)`
 - `(port-context 80 http_port_t tcp)`
+- `(role-type agent_r ai_agent_t)`
+- `(role-type log_r log_shipper_t)`
+- `(role-type user_r user_t)`
+- `(selinux-user-role agent_u agent_r)`
+- `(selinux-user-role log_u log_r)`
+- `(selinux-user-role user_u user_r)`
 - `(sensitive-capability dac_override dac_bypass)`
 - `(sensitive-capability sys_admin kernel_administration)`
 - `(sensitive-process-permission dyntransition arbitrary_domain_transition)`
@@ -95,6 +108,7 @@ metta (|- ((==> (mls-range user_t s0 s0 (c0)) mls_blocked_secret_doc_read_for_us
 metta (|- ((==> (port-context 80 http_port_t tcp) can_name_connect_http_port_80) (stv 1.0 0.95)) ((port-context 80 http_port_t tcp) (stv 1.0 0.95)))
 metta (|- ((==> (allow ai_agent_t self capability dac_override) ai_agent_has_dac_override) (stv 1.0 0.95)) ((allow ai_agent_t self capability dac_override) (stv 1.0 0.95)))
 metta (|- ((==> (allow ai_agent_t self process dyntransition) ai_agent_has_dyntransition) (stv 1.0 0.95)) ((allow ai_agent_t self process dyntransition) (stv 1.0 0.95)))
+metta (|- ((==> (login-mapping agent_service agent_u) agent_service_maps_to_sensitive_agent_domain) (stv 1.0 0.95)) ((login-mapping agent_service agent_u) (stv 1.0 0.95)))
 ```
 
 ## Expected Use
@@ -104,4 +118,4 @@ The useful result is not that the toy facts are realistic; it is whether OmegaCl
 
 ## Soundness Boundary
 
-This fixture models only simple boolean-gated conditionals, explicit constraint-denial facts, resolved file and port contexts, type bounds, capability/process-class grants, and a narrow read-side MLS/MCS range check. It does not model nested conditional expressions, full SELinux constraint expressions, write-side MLS/MCS range algebra, roles, users, DAC outcome checks, seccomp, namespaces, cgroups, or firewall policy.
+This fixture models only simple boolean-gated conditionals, explicit constraint-denial facts, resolved file and port contexts, type bounds, login/user/role/type mappings, capability/process-class grants, and a narrow read-side MLS/MCS range check. It does not model nested conditional expressions, full SELinux constraint expressions, write-side MLS/MCS range algebra, role transitions, DAC outcome checks, seccomp, namespaces, cgroups, or firewall policy.

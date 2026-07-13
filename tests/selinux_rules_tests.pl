@@ -137,6 +137,34 @@ test(ai_agent_sensitive_process_permission_grant) :-
 test(non_sensitive_process_permission_is_not_flagged, [fail]) :-
     has_sensitive_process_permission(log_shipper_t, sigchld, _Reason).
 
+test(login_domain_resolves_role_type) :-
+    once(login_domain(agent_service, ai_agent_t)).
+
+test(login_can_access_sensitive_capability) :-
+    once(login_can_access(agent_service, self, capability, sys_admin)).
+
+test(login_can_access_respects_effective_allow, [fail]) :-
+    login_can_access(alice, secret_doc_t, file, read).
+
+test(login_sensitive_capability_grant) :-
+    once(login_sensitive_capability(
+        agent_service,
+        ai_agent_t,
+        dac_override,
+        dac_bypass
+    )).
+
+test(login_sensitive_process_permission_grant) :-
+    once(login_sensitive_process_permission(
+        agent_service,
+        ai_agent_t,
+        dyntransition,
+        arbitrary_domain_transition
+    )).
+
+test(login_non_sensitive_capability_is_not_flagged, [fail]) :-
+    login_sensitive_capability(log_shipper, log_shipper_t, audit_write, _Reason).
+
 test(risky_web_shell_path) :-
     once(risky_web_shell_path(
         httpd_t,
@@ -254,6 +282,28 @@ test(audit_finding_ai_agent_process_permission_shape) :-
         }
     )).
 
+test(audit_finding_login_capability_shape) :-
+    once(audit_finding(
+        login_sensitive_capability,
+        finding{
+            login: agent_service,
+            domain: ai_agent_t,
+            capability: sys_admin,
+            reason: kernel_administration
+        }
+    )).
+
+test(audit_finding_login_process_permission_shape) :-
+    once(audit_finding(
+        login_sensitive_process_permission,
+        finding{
+            login: agent_service,
+            domain: ai_agent_t,
+            permission: noatsecure,
+            reason: unsafe_exec_environment
+        }
+    )).
+
 test(audit_finding_web_shell_evidence) :-
     once(audit_finding_with_evidence(risky_web_shell_path, Finding)),
     assertion(Finding.source == httpd_t),
@@ -332,6 +382,39 @@ test(audit_finding_ai_agent_process_permission_evidence) :-
         allow(ai_agent_t, self, process, noatsecure)-_,
         has_attribute(ai_agent_t, ai_agent_domain)-_,
         sensitive_process_permission(noatsecure, unsafe_exec_environment)-_
+    ]).
+
+test(audit_finding_login_capability_evidence) :-
+    once((
+        audit_finding_with_evidence(login_sensitive_capability, Finding),
+        Finding.capability == dac_override
+    )),
+    assertion(Finding.login == agent_service),
+    assertion(Finding.domain == ai_agent_t),
+    assertion(Finding.evidence = [
+        login_mapping(agent_service, agent_u)-_,
+        selinux_user_role(agent_u, agent_r)-_,
+        role_type(agent_r, ai_agent_t)-_,
+        allow(ai_agent_t, self, capability, dac_override)-_,
+        sensitive_capability(dac_override, dac_bypass)-_
+    ]).
+
+test(audit_finding_login_process_permission_evidence) :-
+    once((
+        audit_finding_with_evidence(
+            login_sensitive_process_permission,
+            Finding
+        ),
+        Finding.permission == dyntransition
+    )),
+    assertion(Finding.login == agent_service),
+    assertion(Finding.domain == ai_agent_t),
+    assertion(Finding.evidence = [
+        login_mapping(agent_service, agent_u)-_,
+        selinux_user_role(agent_u, agent_r)-_,
+        role_type(agent_r, ai_agent_t)-_,
+        allow(ai_agent_t, self, process, dyntransition)-_,
+        sensitive_process_permission(dyntransition, arbitrary_domain_transition)-_
     ]).
 
 :- end_tests(selinux_rules).

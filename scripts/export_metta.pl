@@ -42,6 +42,15 @@ metta_line(Line) :-
     sensitive_process_permission(Permission, Reason),
     sexpr_line(['sensitive-process-permission', Permission, Reason], Line).
 metta_line(Line) :-
+    login_mapping(Login, SelinuxUser),
+    sexpr_line(['login-mapping', Login, SelinuxUser], Line).
+metta_line(Line) :-
+    selinux_user_role(SelinuxUser, Role),
+    sexpr_line(['selinux-user-role', SelinuxUser, Role], Line).
+metta_line(Line) :-
+    role_type(Role, Type),
+    sexpr_line(['role-type', Role, Type], Line).
+metta_line(Line) :-
     has_attribute(Type, Attribute),
     sexpr_line(['has-attribute', Type, Attribute], Line).
 metta_line(Line) :-

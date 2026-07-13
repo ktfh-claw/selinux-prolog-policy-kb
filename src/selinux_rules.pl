@@ -14,6 +14,10 @@
     ai_agent_sensitive_capability/3,
     has_sensitive_process_permission/3,
     ai_agent_sensitive_process_permission/3,
+    login_domain/2,
+    login_can_access/4,
+    login_sensitive_capability/4,
+    login_sensitive_process_permission/4,
     risky_web_shell_path/3,
     risky_executable_content_path/3,
     can_domain_transition/3,
@@ -116,6 +120,23 @@ has_sensitive_process_permission(Source, Permission, Reason) :-
 ai_agent_sensitive_process_permission(Source, Permission, Reason) :-
     has_attribute(Source, ai_agent_domain),
     has_sensitive_process_permission(Source, Permission, Reason).
+
+login_domain(Login, Domain) :-
+    login_mapping(Login, SelinuxUser),
+    selinux_user_role(SelinuxUser, Role),
+    role_type(Role, Domain).
+
+login_can_access(Login, Target, Class, Permission) :-
+    login_domain(Login, Domain),
+    effective_allow(Domain, Target, Class, Permission).
+
+login_sensitive_capability(Login, Domain, Capability, Reason) :-
+    login_domain(Login, Domain),
+    has_sensitive_capability(Domain, Capability, Reason).
+
+login_sensitive_process_permission(Login, Domain, Permission, Reason) :-
+    login_domain(Login, Domain),
+    has_sensitive_process_permission(Domain, Permission, Reason).
 
 risky_web_shell_path(Source, Target, write_executable_content) :-
     effective_allow(Source, Target, file, write),
@@ -223,6 +244,22 @@ audit_finding(ai_agent_sensitive_process_permission, finding{
     reason: Reason
 }) :-
     ai_agent_sensitive_process_permission(Source, Permission, Reason).
+
+audit_finding(login_sensitive_capability, finding{
+    login: Login,
+    domain: Domain,
+    capability: Capability,
+    reason: Reason
+}) :-
+    login_sensitive_capability(Login, Domain, Capability, Reason).
+
+audit_finding(login_sensitive_process_permission, finding{
+    login: Login,
+    domain: Domain,
+    permission: Permission,
+    reason: Reason
+}) :-
+    login_sensitive_process_permission(Login, Domain, Permission, Reason).
 
 audit_finding_with_evidence(Kind, FindingWithEvidence) :-
     audit_finding(Kind, Finding),
@@ -343,4 +380,44 @@ audit_evidence(ai_agent_sensitive_process_permission, Finding, Evidence) :-
     ],
     fact_source(allow(Source, self, process, Permission), AllowSource),
     fact_source(has_attribute(Source, ai_agent_domain), AgentAttributeSource),
+    fact_source(sensitive_process_permission(Permission, Reason), PermissionSource).
+
+audit_evidence(login_sensitive_capability, Finding, Evidence) :-
+    Login = Finding.login,
+    Domain = Finding.domain,
+    Capability = Finding.capability,
+    Reason = Finding.reason,
+    login_mapping(Login, SelinuxUser),
+    selinux_user_role(SelinuxUser, Role),
+    Evidence = [
+        login_mapping(Login, SelinuxUser)-LoginSource,
+        selinux_user_role(SelinuxUser, Role)-UserRoleSource,
+        role_type(Role, Domain)-RoleTypeSource,
+        allow(Domain, self, capability, Capability)-AllowSource,
+        sensitive_capability(Capability, Reason)-CapabilitySource
+    ],
+    fact_source(login_mapping(Login, SelinuxUser), LoginSource),
+    fact_source(selinux_user_role(SelinuxUser, Role), UserRoleSource),
+    fact_source(role_type(Role, Domain), RoleTypeSource),
+    fact_source(allow(Domain, self, capability, Capability), AllowSource),
+    fact_source(sensitive_capability(Capability, Reason), CapabilitySource).
+
+audit_evidence(login_sensitive_process_permission, Finding, Evidence) :-
+    Login = Finding.login,
+    Domain = Finding.domain,
+    Permission = Finding.permission,
+    Reason = Finding.reason,
+    login_mapping(Login, SelinuxUser),
+    selinux_user_role(SelinuxUser, Role),
+    Evidence = [
+        login_mapping(Login, SelinuxUser)-LoginSource,
+        selinux_user_role(SelinuxUser, Role)-UserRoleSource,
+        role_type(Role, Domain)-RoleTypeSource,
+        allow(Domain, self, process, Permission)-AllowSource,
+        sensitive_process_permission(Permission, Reason)-PermissionSource
+    ],
+    fact_source(login_mapping(Login, SelinuxUser), LoginSource),
+    fact_source(selinux_user_role(SelinuxUser, Role), UserRoleSource),
+    fact_source(role_type(Role, Domain), RoleTypeSource),
+    fact_source(allow(Domain, self, process, Permission), AllowSource),
     fact_source(sensitive_process_permission(Permission, Reason), PermissionSource).

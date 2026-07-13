@@ -78,6 +78,27 @@ test(omegaclaw_prior_contains_path_and_severity_baselines) :-
         _,
         _,
         _,
+        '(login-mapping agent_service agent_u)'
+    )),
+    once(sub_string(
+        Text,
+        _,
+        _,
+        _,
+        '(selinux-user-role agent_u agent_r)'
+    )),
+    once(sub_string(
+        Text,
+        _,
+        _,
+        _,
+        '(role-type agent_r ai_agent_t)'
+    )),
+    once(sub_string(
+        Text,
+        _,
+        _,
+        _,
         '(mls-range user_t s0 s0 (c0))'
     )),
     once(sub_string(
@@ -142,6 +163,13 @@ test(omegaclaw_prior_contains_path_and_severity_baselines) :-
         _,
         _,
         'ai_agent_has_dyntransition'
+    )),
+    once(sub_string(
+        Text,
+        _,
+        _,
+        _,
+        'agent_service_maps_to_sensitive_agent_domain'
     )),
     once(sub_string(
         Text,

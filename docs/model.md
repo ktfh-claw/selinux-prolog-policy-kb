@@ -14,6 +14,9 @@ SETools-style policy analysis output:
 - `type_bound(ChildType, ParentType)`
 - `sensitive_capability(Capability, Reason)`
 - `sensitive_process_permission(Permission, Reason)`
+- `login_mapping(Login, SelinuxUser)`
+- `selinux_user_role(SelinuxUser, Role)`
+- `role_type(Role, Type)`
 - `has_attribute(Type, Attribute)`
 - `type_transition(Source, Entrypoint, Target)`
 - `new_allow(PolicyVersion, Source, Target, Class, Permission)`
@@ -41,6 +44,10 @@ Derived predicates represent local audit questions:
 - `ai_agent_sensitive_capability/3`
 - `has_sensitive_process_permission/3`
 - `ai_agent_sensitive_process_permission/3`
+- `login_domain/2`
+- `login_can_access/4`
+- `login_sensitive_capability/4`
+- `login_sensitive_process_permission/4`
 - `risky_web_shell_path/3`
 - `risky_executable_content_path/3`
 - `can_domain_transition/3`
@@ -90,6 +97,13 @@ change process execution or domain-transition behavior. It currently flags
 `dyntransition` and `noatsecure` for AI-agent domains as an application-style
 baseline; it does not model every process permission or kernel transition path.
 
+`login_mapping/2`, `selinux_user_role/2`, and `role_type/2` form a normalized
+login-to-domain chain. `login_domain/2` resolves that chain, and
+`login_can_access/4` asks whether a login can reach an effective allow through
+any of its mapped roles and types. The sensitive login predicates reuse the
+capability and process-permission rubrics so service accounts can be audited by
+login identity as well as by SELinux domain.
+
 `fixtures/omegaclaw_knowledge_prior.md` is generated from the MeTTa export and
 adds a small set of OmegaClaw `metta` commands for the first import/read
 experiment. It is intentionally a bridge artifact: the Prolog model remains the
@@ -128,7 +142,7 @@ It does not yet model:
 
 - nested conditional expressions beyond one controlling boolean
 - full SELinux constraint expressions and write-side MLS/MCS range algebra
-- role/user mappings
+- role transitions and role dominance
 - file-context path matching
 - Linux DAC outcomes, seccomp, cgroups, namespaces, or firewall policy
 
